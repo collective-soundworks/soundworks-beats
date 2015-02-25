@@ -35,24 +35,17 @@ window.addEventListener('load', () => {
 class BeatsClientPerformance extends clientSide.Module {
   constructor(sync) {
     this.sync = sync; // the sync module
-    this.synth = new Synth(); // a Web Audio synth that makes sound
+    this.synth = new Synth(sync); // a Web Audio synth that makes sound
 
     // When the server sends the beat loop start time
     client.socket.on('beat_start', (startTime, beatPeriod) => {
-      // Calculate the next beat trigger time in local time
-      var startTimeLocal = this.sync.getLocalTime(startTime);
-      var now = this.sync.getLocalTime();
-      var elapsedBeats = Math.floor((now - startTimeLocal) / beatPeriod);
-      var nextBeatTime = startTimeLocal + beatPeriod * (elapsedBeats + 1);
-
-      // Launch the synth at that time
-      this.synth.play(nextBeatTime, beatPeriod);
-    })
+      this.synth.play(startTime, beatPeriod);
+    });
   }
 
   // Must have
   start() {
-    super.start(); // mandatory
+    super.start(); // mandatory: call parent before the party
 
     // Send a message to the server indicating that the user entered the performance
     client.socket.emit('perf_start'); // 
@@ -60,13 +53,19 @@ class BeatsClientPerformance extends clientSide.Module {
 
   // Must have
   done() {
-    super.done(); // mandatory
+    // nothing special here
+    super.done(); // mandatory: call parent after the cleanup
   }
 }
 
 class Synth {
-  constructor() {
-    this.lookahead = 0.3;
+  constructor(sync) {
+    this.sync = sync;
+    
+    this.scheduleID = 0; // to cancel setTimeout
+    this.schedulePeriod = 0.05;
+    this.scheduleLookahead = 0.5;
+    
     this.buffer = this.generateClickBuffer();
   }
 
@@ -75,8 +74,7 @@ class Synth {
 
     const length = 2;
     var buffer = audioContext.createBuffer(channels, length,
-      audioContext.sampleRate);
-    // buffer.copyToChannel(array, 0); // error on Chrome?
+                                           audioContext.sampleRate);
     var data = buffer.getChannelData(0);
 
     // first 2 samples are actual click, the rest is fixed noise
@@ -86,23 +84,55 @@ class Synth {
     return buffer;
   }
 
+  /** 
+   * Initiate a running process, starting at nextTime, or now if
+   * nextTime is in past.
+   * 
+   * @param {Number} nextTime in master time
+   * @param {Number} period 
+   */
+  play(nextTime, period) {
+    clearTimeout(this.scheduleID);
+    const now = this.sync.getServerTime();
+    
+    if(nextTime < now + this.scheduleLookahead) {
+      this.triggerSound(nextTime);
 
-  play(startTime, period) {
-    this.triggerSound(startTime);
-    setTimeout(() => {
-      this.play(startTime + period, period)
-    }, 1000 * (period - this.lookahead));
+      if(nextTime < now) {
+        // good restart from now
+        nextTime = now + (now - nextTime) % period;
+        
+        // it might be soon: fast forward
+        if(nextTime < now + this.scheduleLookahead) {
+          this.triggerSound(nextTime);
+          nextTime += period;
+        }
+      }
+      else {
+        nextTime += period;
+      }
+      
+    } // within look-ahead
+
+    this.scheduleID = setTimeout( () => {
+      this.play(nextTime, period);
+    }, 1000 * this.schedulePeriod);
   }
 
+  /** 
+   * Actually output the sound.
+   * 
+   * @param {Number} startTime in master time
+   *
+   */
   triggerSound(startTime) {
     var bufferSource = audioContext.createBufferSource();
     bufferSource.buffer = this.buffer;
     bufferSource.connect(audioContext.destination);
 
-    // duration parameter ignored? on Safari (7.1.2), Firefox (34)
-
     // compensate client delay
-    bufferSource.start(startTime);
+    var localTime = Math.max(0, this.sync.getLocalTime(startTime));
+    bufferSource.start(localTime);
 
     console.log('click');
     // plays a sound when the Web Audio clock reaches startTime

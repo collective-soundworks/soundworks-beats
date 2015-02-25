@@ -16,7 +16,7 @@ class BeatsServerPerformance extends serverSide.Module {
   constructor() {
     var now = process.hrtime();
     this.startTime = now[0] + now[1] * 1e-9; // in seconds
-    this.beatPeriod = 0.5 // in seconds
+    this.beatPeriod = 1; // in seconds
   }
 
   connect(client) {
@@ -30,7 +30,7 @@ class BeatsServerPerformance extends serverSide.Module {
   disconnect(client) {}
 }
 
-var performance = new BeatsServerPerformance()
+var performance = new BeatsServerPerformance();
 
 server.start(app);
 server.map('/player', 'Beats', sync,  performance);
