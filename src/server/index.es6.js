@@ -33,4 +33,4 @@ class BeatsServerPerformance extends serverSide.Module {
 var performance = new BeatsServerPerformance()
 
 server.start(app);
-server.map('/player', 'Beats', sync, placement, performance);
+server.map('/player', 'Beats', sync,  performance);
