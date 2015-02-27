@@ -1,10 +1,8 @@
 {
   "name": "beats",
-  "author": "Norbert Schnell, Sébastien Robaszkiewicz",
-  "description": "The Matrix's Drops is a collective performance that enables players to play on other players' devices by moving their finger on the matrix represented on the screen of their phones.",
   "version": "0.0.1",
   "scripts": {
-    "start": "node src/server/index.js"
+    "start": "node --harmony src/server/index.js"
   },
   "dependencies": {
     "audio-context": "Ircam-RnD/audio-context.git#master",
