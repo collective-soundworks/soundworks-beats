@@ -97,7 +97,7 @@ class Synth {
    */
   play(nextTime, period) {
     clearTimeout(this.scheduleID);
-    const now = this.sync.getServerTime();
+    const now = this.sync.getMasterTime();
     
     if(nextTime < now + this.scheduleLookahead) {
       this.triggerSound(nextTime);

@@ -18,8 +18,7 @@ let sync = new serverSide.Sync();
 
 class BeatsServerPerformance extends serverSide.Module {
   constructor() {
-    const now = process.hrtime();
-    this.startTime = now[0] + now[1] * 1e-9; // in seconds
+    this.startTime = sync.getMasterTime();
     this.beatPeriod = 1; // in seconds
   }
 
