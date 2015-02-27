@@ -1,4 +1,7 @@
 // Loading the libraries
+const debugString = 'soundworks-beats';
+let debug = require('debug')(debugString);
+
 let clientSide = require('soundworks/client');
 let client = clientSide.client;
 let audioContext = require('audio-context');
@@ -134,9 +137,11 @@ class Synth {
 
     // compensate client delay
     const localTime = Math.max(0, this.sync.getLocalTime(startTime));
+    debug("startTime = ", startTime);
+    debug("localTime = ", localTime);
     bufferSource.start(localTime);
 
-    console.log('click');
+    debug('click');
     // plays a sound when the Web Audio clock reaches startTime
   }
 }
