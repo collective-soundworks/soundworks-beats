@@ -24,9 +24,11 @@ window.addEventListener('load', () => {
   // Start the scenario and link the modules
   client.start(
     client.serial(
-      welcome,
-      sync, // init the sync process
-      performance
+      client.parallel(
+        welcome,
+        sync // init the sync process (do not wait for that)
+      ),
+      performance // when all of them are done, we launch the performance
     )
   );
 
