@@ -1,27 +1,27 @@
 'use strict';
 
 // Soundworks library
-var serverSide = require('soundworks/server');
-var server = serverSide.server;
+let serverSide = require('soundworks/server');
+let server = serverSide.server;
 
 // Express application
-var express = require('express');
-var app = express();
-var path = require('path');
-var port = process.env.PORT || 8000;
-var dir = path.join(__dirname, '../../public');
+let express = require('express');
+let app = express();
+let path = require('path');
+let port = process.env.PORT || 8000;
+let dir = path.join(__dirname, '../../public');
 
-var sync = new serverSide.Sync();
+let sync = new serverSide.Sync();
 
 class BeatsServerPerformance extends serverSide.Module {
   constructor() {
-    var now = process.hrtime();
+    const now = process.hrtime();
     this.startTime = now[0] + now[1] * 1e-9; // in seconds
     this.beatPeriod = 1; // in seconds
   }
 
   connect(client) {
-    var socket = client.socket;
+    let socket = client.socket;
 
     socket.on('perf_start', () => {
       socket.emit('beat_start', this.startTime, this.beatPeriod);
@@ -31,7 +31,7 @@ class BeatsServerPerformance extends serverSide.Module {
   disconnect(client) {}
 }
 
-var performance = new BeatsServerPerformance();
+let performance = new BeatsServerPerformance();
 
 // Launch server
 server.start(app, dir, 8000);

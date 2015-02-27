@@ -1,7 +1,7 @@
 // Loading the libraries
-var clientSide = require('soundworks/client');
-var client = clientSide.client;
-var audioContext = require('audio-context');
+let clientSide = require('soundworks/client');
+let client = clientSide.client;
+let audioContext = require('audio-context');
 
 // Initiliazing the socket.io namespace
 client.init('/player');
@@ -9,17 +9,17 @@ client.init('/player');
 window.addEventListener('load', () => {
   // Scenario definitions
 
-  var welcome = new clientSide.Dialog({
+  const welcome = new clientSide.Dialog({
     id: 'welcome',
     text: "<p>Welcome to <b>Beats</b>.</p> <p>Touch the screen to join!</p>",
     activateAudio: true
   });
 
 
-  var sync = new clientSide.Sync();
+  let sync = new clientSide.Sync();
 
   // Instantiate the performance module (defined before)
-  var performance = new BeatsClientPerformance(sync);
+  let performance = new BeatsClientPerformance(sync);
 
   // Start the scenario and link the modules
   client.start(
@@ -75,9 +75,9 @@ class Synth {
     const channels = 1;
 
     const length = 2;
-    var buffer = audioContext.createBuffer(channels, length,
+    let buffer = audioContext.createBuffer(channels, length,
                                            audioContext.sampleRate);
-    var data = buffer.getChannelData(0);
+    let data = buffer.getChannelData(0);
 
     // first 2 samples are actual click, the rest is fixed noise
     data[0] = 1;
@@ -128,12 +128,12 @@ class Synth {
    *
    */
   triggerSound(startTime) {
-    var bufferSource = audioContext.createBufferSource();
+    let bufferSource = audioContext.createBufferSource();
     bufferSource.buffer = this.buffer;
     bufferSource.connect(audioContext.destination);
 
     // compensate client delay
-    var localTime = Math.max(0, this.sync.getLocalTime(startTime));
+    const localTime = Math.max(0, this.sync.getLocalTime(startTime));
     bufferSource.start(localTime);
 
     console.log('click');
