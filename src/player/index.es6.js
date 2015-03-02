@@ -1,5 +1,5 @@
 // Loading the libraries
-let debug = require('debug')('soundworks-beats');
+let debug = require('debug')('soundworks:player:beats');
 
 let clientSide = require('soundworks/client');
 let client = clientSide.client;
@@ -104,7 +104,7 @@ class Synth {
 
       if(nextTime < now) {
         // good restart from now
-        nextTime = now + (now - nextTime) % period;
+        nextTime += Math.ceil((now - nextTime) / period) * period;
         
         // it might be soon: fast forward
         if(nextTime < now + this.scheduleLookahead) {
