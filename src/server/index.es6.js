@@ -1,7 +1,7 @@
 'use strict';
 
 // Libraries
-let debug = require('debug')('soundworks-beats');
+let debug = require('debug')('soundworks:server:beats');
 
 // Soundworks library
 let serverSide = require('soundworks/server');
@@ -26,6 +26,7 @@ class BeatsServerPerformance extends serverSide.Module {
     let socket = client.socket;
 
     socket.on('perf_start', () => {
+      debug('perf_start', this.startTime, this.beatPeriod);
       socket.emit('beat_start', this.startTime, this.beatPeriod);
     });
   }

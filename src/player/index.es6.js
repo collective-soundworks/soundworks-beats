@@ -70,24 +70,61 @@ class Synth {
     this.schedulePeriod = 0.05;
     this.scheduleLookahead = 0.5;
     
-    this.buffer = this.generateClickBuffer();
+    this.clickBuffer = this.generateClickBuffer();
+    this.clackBuffer = this.generateClackBuffer();
+    this.noiseBuffer = this.generateNoiseBuffer();
   }
 
   generateClickBuffer() {
+    const length = 2;
     const channels = 1;
 
-    const length = 2;
     let buffer = audioContext.createBuffer(channels, length,
                                            audioContext.sampleRate);
     let data = buffer.getChannelData(0);
 
-    // first 2 samples are actual click, the rest is fixed noise
     data[0] = 1;
     data[1] = -1;
 
     return buffer;
   }
 
+  generateClackBuffer() {
+    const length = 5;
+    const channels = 1;
+    const gain = -10; // dB
+
+    let buffer = audioContext.createBuffer(channels, length,
+                                           audioContext.sampleRate);
+    const amplitude = this.dBToLin(gain);
+    let data = buffer.getChannelData(0);
+
+    for(let i = 0; i < length; ++i) {
+      data[i] = amplitude; // sic
+    }
+
+    return buffer;
+  }
+
+  generateNoiseBuffer() {
+    const duration = 0.2; // second
+    const gain = -30; // dB
+    
+    const length = duration * audioContext.sampleRate;
+    const amplitude = this.dBToLin(gain);
+    const channelCount = audioContext.destination.channelCount;
+    let buffer = audioContext.createBuffer(channelCount, length,
+                                           audioContext.sampleRate);
+    for(let c = 0; c < channelCount; ++c) {
+      let data = buffer.getChannelData(c);
+      for(let i = 0; i < length; ++i) {
+        data[i] = amplitude * (Math.random() * 2 + 1);
+      }
+    }
+
+    return buffer;
+  }
+  
   /** 
    * Initiate a running process, starting at nextTime, or now if
    * nextTime is in past.
@@ -100,19 +137,23 @@ class Synth {
     const now = this.sync.getMasterTime();
     
     if(nextTime < now + this.scheduleLookahead) {
-      this.triggerSound(nextTime);
-
+      // too late
       if(nextTime < now) {
+        debug('too late by', nextTime - now);
+        this.triggerSound(nextTime, this.noiseBuffer);
+
         // good restart from now
         nextTime += Math.ceil((now - nextTime) / period) * period;
         
-        // it might be soon: fast forward
+        // next it might be soon: fast forward
         if(nextTime < now + this.scheduleLookahead) {
-          this.triggerSound(nextTime);
+          debug('soon', nextTime - now);
+          this.triggerSound(nextTime, this.clackBuffer);
           nextTime += period;
         }
-      }
-      else {
+      } else {
+        debug('triggered', nextTime - now);
+        this.triggerSound(nextTime, this.clickBuffer);
         nextTime += period;
       }
       
@@ -129,18 +170,29 @@ class Synth {
    * @param {Number} startTime in master time
    *
    */
-  triggerSound(startTime) {
+  triggerSound(startTime, buffer) {
     let bufferSource = audioContext.createBufferSource();
-    bufferSource.buffer = this.buffer;
+    bufferSource.buffer = buffer;
     bufferSource.connect(audioContext.destination);
 
     // compensate client delay
     const localTime = Math.max(0, this.sync.getLocalTime(startTime));
-    debug("startTime = ", startTime);
-    debug("localTime = ", localTime);
+    debug("trigger startTime = ", startTime);
+    debug("trigger localTime = ", localTime);
     bufferSource.start(localTime);
-
-    debug('click');
-    // plays a sound when the Web Audio clock reaches startTime
   }
+
+  /** 
+   * Convert dB to linear gain value (1e-3 for -60dB)
+   * 
+   * @param {number} dBValue 
+   * 
+   * @return {number} gain value
+   */
+  dBToLin(dBValue) {
+    return Math.pow(10, dBValue / 20);
+  }
+
 }
+
+
