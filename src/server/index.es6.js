@@ -1,14 +1,14 @@
-// Require the libraries and setup the Express app
+'use strict';
+
+// Soundworks library
 var serverSide = require('soundworks/server');
 var server = serverSide.server;
-var path = require('path');
+
+// Express application
 var express = require('express');
 var app = express();
-
-// Configuration of the Express app
-app.set('port', process.env.PORT || 3000);
-app.set('view engine', 'jade');
-app.use(express.static(path.join(__dirname, '../../public')));
+var path = require('path');
+var dir = path.join(__dirname, '../../public');
 
 var sync = new serverSide.Sync();
 
@@ -32,5 +32,5 @@ class BeatsServerPerformance extends serverSide.Module {
 
 var performance = new BeatsServerPerformance()
 
-server.start(app);
-server.map('/player', 'Beats', sync, placement, performance);
+server.start(app, dir, 3000);
+server.map('/player', 'Beats', sync, performance);
