@@ -14,15 +14,15 @@ var sync = new serverSide.Sync();
 
 class BeatsServerPerformance extends serverSide.Module {
   constructor() {
-    var now = process.hrtime();
-    this.startTime = now[0] + now[1] * 1e-9; // in seconds
-    this.beatPeriod = 0.5 // in seconds
+    this.startTime = sync.getMasterTime();
+    this.beatPeriod = 1; // in seconds
   }
 
   connect(client) {
-    var socket = client.socket;
+    let socket = client.socket;
 
     socket.on('perf_start', () => {
+      debug('perf_start', this.startTime, this.beatPeriod);
       socket.emit('beat_start', this.startTime, this.beatPeriod);
     });
   }
@@ -30,7 +30,9 @@ class BeatsServerPerformance extends serverSide.Module {
   disconnect(client) {}
 }
 
-var performance = new BeatsServerPerformance()
+var performance = new BeatsServerPerformance();
 
-server.start(app, dir, 3000);
+debug('launch server');
+
+server.start(app, dir, 8000);
 server.map('/player', 'Beats', sync, performance);
