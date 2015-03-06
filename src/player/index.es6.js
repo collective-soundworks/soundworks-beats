@@ -78,13 +78,15 @@ class Synth {
   generateClickBuffer() {
     const length = 2;
     const channels = 1;
+    const gain = -10; // dB
 
     let buffer = audioContext.createBuffer(channels, length,
                                            audioContext.sampleRate);
     let data = buffer.getChannelData(0);
 
-    data[0] = 1;
-    data[1] = -1;
+    const amplitude = this.dBToLin(gain);
+    data[0] = amplitude;
+    data[1] = (- amplitude);
 
     return buffer;
   }
@@ -129,12 +131,12 @@ class Synth {
    * Initiate a running process, starting at nextTime, or now if
    * nextTime is in past.
    * 
-   * @param {Number} nextTime in master time
+   * @param {Number} nextTime in sync time
    * @param {Number} period 
    */
   play(nextTime, period) {
     clearTimeout(this.scheduleID);
-    const now = this.sync.getMasterTime();
+    const now = this.sync.getSyncTime();
     
     if(nextTime < now + this.scheduleLookahead) {
       // too late
@@ -177,8 +179,8 @@ class Synth {
 
     // compensate client delay
     const localTime = Math.max(0, this.sync.getLocalTime(startTime));
-    debug("trigger startTime = ", startTime);
-    debug("trigger localTime = ", localTime);
+    // debug("trigger startTime = ", startTime);
+    // debug("trigger localTime = ", localTime);
     bufferSource.start(localTime);
   }
 
