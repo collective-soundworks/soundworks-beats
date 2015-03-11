@@ -7,7 +7,7 @@
     "start": "node --harmony src/server/index.js"
   },
   "dependencies": {
-    "audio-context": "wavesjs/audio-context.git#master",
+    "audio-context": "Ircam-RnD/audio-context.git#master",
     "debug": "^2.1.2",
     "ejs": "^2.3.1",
     "express": "^4.8.6",
