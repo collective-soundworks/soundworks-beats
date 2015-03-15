@@ -34,29 +34,21 @@ window.addEventListener('load', () => {
 
 });
 
-class BeatsClientPerformance extends clientSide.Module {
-  constructor(sync) {
+class BeatsClientPerformance extends clientSide.Performance {
+  constructor(sync, options = {}) {
+    super(options);
+
     this.sync = sync; // the sync module
     this.synth = new Synth(sync); // a Web Audio synth that makes sound
 
     // When the server sends the beat loop start time
-    client.socket.on('beat_start', (startTime, beatPeriod) => {
+    client.socket.on('performance:startBeat', (startTime, beatPeriod) => {
       this.synth.play(startTime, beatPeriod);
     });
   }
 
-  // Must have
   start() {
-    super.start(); // mandatory: call parent before the party
-
-    // Send a message to the server indicating that the user entered the performance
-    client.socket.emit('perf_start'); // 
-  }
-
-  // Must have
-  done() {
-    // nothing special here
-    super.done(); // mandatory: call parent after the cleanup
+    super.start();
   }
 }
 

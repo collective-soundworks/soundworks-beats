@@ -12,22 +12,26 @@ var dir = path.join(__dirname, '../../public');
 
 var sync = new serverSide.Sync();
 
-class BeatsServerPerformance extends serverSide.Module {
+class BeatsServerPerformance extends serverSide.Performance {
   constructor() {
+    super();
+    
     this.startTime = sync.getSyncTime();
     this.beatPeriod = 1; // in seconds
   }
 
   connect(client) {
-    let socket = client.socket;
+    super.connect(client);
 
-    socket.on('perf_start', () => {
+    client.receive('performance:start', () => {
       // debug('perf_start', this.startTime, this.beatPeriod);
-      socket.emit('beat_start', this.startTime, this.beatPeriod);
+      client.send('performance:startBeat', this.startTime, this.beatPeriod);
     });
   }
 
-  disconnect(client) {}
+  disconnect(client) {
+    super.disconnect(client);
+  }
 }
 
 var performance = new BeatsServerPerformance();
