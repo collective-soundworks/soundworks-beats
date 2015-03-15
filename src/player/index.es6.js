@@ -42,13 +42,9 @@ class BeatsClientPerformance extends clientSide.Performance {
     this.synth = new Synth(sync); // a Web Audio synth that makes sound
 
     // When the server sends the beat loop start time
-    client.socket.on('performance:startBeat', (startTime, beatPeriod) => {
+    client.receive('performance:startBeat', (startTime, beatPeriod) => {
       this.synth.play(startTime, beatPeriod);
     });
-  }
-
-  start() {
-    super.start();
   }
 }
 
