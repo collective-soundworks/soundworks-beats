@@ -20,13 +20,10 @@ class BeatsServerPerformance extends serverSide.Performance {
     this.beatPeriod = 1; // in seconds
   }
 
-  connect(client) {
-    super.connect(client);
+  enter(client) {
+    super.enter(client);
 
-    client.receive('performance:start', () => {
-      // debug('perf_start', this.startTime, this.beatPeriod);
-      client.send('performance:startBeat', this.startTime, this.beatPeriod);
-    });
+    client.send('performance:startBeat', this.startTime, this.beatPeriod);
   }
 }
 
