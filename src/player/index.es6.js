@@ -3,7 +3,7 @@ let debug = require('debug')('soundworks:player:beats');
 
 let clientSide = require('soundworks/client');
 let client = clientSide.client;
-let audioContext = require('audio-context');
+let audioContext = clientSide.audioContext;
 
 // Initiliazing the socket.io namespace
 client.init('/player');
