@@ -31,4 +31,4 @@ var performance = new BeatsServerPerformance();
 
 // debug('launch server'
 server.start(app, dir, 8000);
-server.map('/player', 'Beats', sync, performance);
+server.map('player', sync, performance);

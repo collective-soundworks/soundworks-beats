@@ -5,8 +5,8 @@ let clientSide = require('soundworks/client');
 let client = clientSide.client;
 let audioContext = clientSide.audioContext;
 
-// Initiliazing the socket.io namespace
-client.init('/player');
+// Initiliazing the client with its type
+client.init('player');
 
 window.addEventListener('load', () => {
   // Scenario definitions
