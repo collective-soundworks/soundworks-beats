@@ -5,7 +5,7 @@
     "Sébastien Robaszkiewicz"
   ],
   "description": "TODO",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "scripts": {
     "start": "node --harmony src/server/index.js"
   },
@@ -14,7 +14,7 @@
     "ejs": "^2.3.1",
     "express": "^4.8.6",
     "socket.io": "1.1.0",
-    "soundworks": "collective-soundworks/soundworks.git#master"
+    "soundworks": "collective-soundworks/soundworks#v0.3.3"
   },
   "devDependencies": {
     "browserify": "~5.11.0",
