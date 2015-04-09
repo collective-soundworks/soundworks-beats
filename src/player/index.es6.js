@@ -1,3 +1,5 @@
+'use strict';
+
 // Loading the libraries
 let debug = require('debug')('soundworks:player:beats');
 
@@ -8,54 +10,14 @@ let audioContext = clientSide.audioContext;
 // Initiliazing the client with its type
 client.init('player');
 
-window.addEventListener('load', () => {
-  // Scenario definitions
-
-  const welcome = new clientSide.Dialog({
-    id: 'welcome',
-    text: "<p>Welcome to <b>Beats</b>.</p> <p>Touch the screen to join!</p>",
-    activateAudio: true
-  });
-
-
-  let sync = new clientSide.Sync();
-
-  // Instantiate the performance module (defined before)
-  let performance = new BeatsClientPerformance(sync);
-
-  // Start the scenario and link the modules
-  client.start(
-    client.serial(
-      welcome,
-      sync, // init the sync process
-      performance // when all of them are done, we launch the performance
-    )
-  );
-
-});
-
-class BeatsClientPerformance extends clientSide.Performance {
-  constructor(sync, options = {}) {
-    super(options);
-
-    this.sync = sync; // the sync module
-    this.synth = new Synth(sync); // a Web Audio synth that makes sound
-
-    // When the server sends the beat loop start time
-    client.receive('performance:startBeat', (startTime, beatPeriod) => {
-      this.synth.play(startTime, beatPeriod);
-    });
-  }
-}
-
 class Synth {
   constructor(sync) {
     this.sync = sync;
-    
+
     this.scheduleID = 0; // to cancel setTimeout
     this.schedulePeriod = 0.05;
     this.scheduleLookahead = 0.5;
-    
+
     this.clickBuffer = this.generateClickBuffer();
     this.clackBuffer = this.generateClackBuffer();
     this.noiseBuffer = this.generateNoiseBuffer();
@@ -72,7 +34,7 @@ class Synth {
 
     const amplitude = this.dBToLin(gain);
     data[0] = amplitude;
-    data[1] = (- amplitude);
+    data[1] = -amplitude;
 
     return buffer;
   }
@@ -97,7 +59,7 @@ class Synth {
   generateNoiseBuffer() {
     const duration = 0.2; // second
     const gain = -30; // dB
-    
+
     const length = duration * audioContext.sampleRate;
     const amplitude = this.dBToLin(gain);
     const channelCount = audioContext.destination.channelCount;
@@ -112,18 +74,18 @@ class Synth {
 
     return buffer;
   }
-  
-  /** 
+
+  /**
    * Initiate a running process, starting at nextTime, or now if
    * nextTime is in past.
-   * 
+   *
    * @param {Number} nextTime in sync time
-   * @param {Number} period 
+   * @param {Number} period
    */
   play(nextTime, period) {
     clearTimeout(this.scheduleID);
     const now = this.sync.getSyncTime();
-    
+
     if(nextTime < now + this.scheduleLookahead) {
       // too late
       if(nextTime < now) {
@@ -132,7 +94,7 @@ class Synth {
 
         // good restart from now
         nextTime += Math.ceil((now - nextTime) / period) * period;
-        
+
         // next it might be soon: fast forward
         if(nextTime < now + this.scheduleLookahead) {
           debug('soon', nextTime - now);
@@ -144,7 +106,7 @@ class Synth {
         this.triggerSound(nextTime, this.clickBuffer);
         nextTime += period;
       }
-      
+
     } // within look-ahead
 
     this.scheduleID = setTimeout( () => {
@@ -152,9 +114,9 @@ class Synth {
     }, 1000 * this.schedulePeriod);
   }
 
-  /** 
+  /**
    * Actually output the sound.
-   * 
+   *
    * @param {Number} startTime in master time
    *
    */
@@ -170,11 +132,11 @@ class Synth {
     bufferSource.start(localTime);
   }
 
-  /** 
+  /**
    * Convert dB to linear gain value (1e-3 for -60dB)
-   * 
-   * @param {number} dBValue 
-   * 
+   *
+   * @param {number} dBValue
+   *
    * @return {number} gain value
    */
   dBToLin(dBValue) {
@@ -183,4 +145,51 @@ class Synth {
 
 }
 
+class BeatsClientPerformance extends clientSide.Performance {
+  constructor(sync, options = {}) {
+    super(options);
 
+    this.sync = sync; // the sync module
+    this.synth = new Synth(sync); // a Web Audio synth that makes sound
+
+    // When the server sends the beat loop start time
+    client.receive('performance:startBeat', (startTime, beatPeriod) => {
+      this.synth.play(startTime, beatPeriod);
+    });
+
+    this.sync.on('sync:status', (report) => {
+      this.view.innerHTML = '';
+      for(let k in report) {
+        if(report.hasOwnProperty(k) ) {
+          this.view.innerHTML += k + ': ' + report[k] + '<br>';
+        }
+      }
+    });
+  }
+}
+
+window.addEventListener('load', () => {
+  // Scenario definitions
+
+  const welcome = new clientSide.Dialog({
+    id: 'welcome',
+    text: '<p>Welcome to <b>Beats</b>.</p> <p>Touch the screen to join!</p>',
+    activateAudio: true
+  });
+
+
+  let sync = new clientSide.Sync();
+
+  // Instantiate the performance module (defined before)
+  let performance = new BeatsClientPerformance(sync);
+
+  // Start the scenario and link the modules
+  client.start(
+    client.serial(
+      welcome,
+      sync, // init the sync process
+      performance // when all of them are done, we launch the performance
+    )
+  );
+
+});

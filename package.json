@@ -4,8 +4,8 @@
     "Jean-Phillipe.Lambert",
     "Sébastien Robaszkiewicz"
   ],
-  "description": "TODO",
-  "version": "0.2.2",
+  "description": "Simple synchronisation test",
+  "version": "0.3.0",
   "scripts": {
     "start": "node --harmony src/server/index.js"
   },
