@@ -1239,24 +1239,24 @@ var ClientDialog = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]=
   function ClientDialog() {var options = arguments[0];if(options === void 0)options = {};
     super$0.call(this, options.name || 'dialog', true, options.color);
 
-    this.__mustActivateAudio = options.activateAudio || false;
-    this.__text = options.text || "Hello!";
+    this._mustActivateAudio = options.activateAudio || false;
+    this._text = options.text || "Hello!";
   }if(super$0!==null)SP$0(ClientDialog,super$0);ClientDialog.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientDialog,"configurable":true,"writable":true}});DP$0(ClientDialog,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {var this$0 = this;
     super$0.prototype.start.call(this);
-    this.setCenteredViewContent('<p>' + this.__text + '</p>');
+    this.setCenteredViewContent('<p>' + this._text + '</p>');
 
     // install click listener
     this.view.addEventListener('click', function()  {
-      if (this$0.__mustActivateAudio)
-        this$0.__activateAudio();
+      if (this$0._mustActivateAudio)
+        this$0._activateAudio();
 
       this$0.done();
     });
   };
 
-  proto$0.__activateAudio = function() {
+  proto$0._activateAudio = function() {
     var o = audioContext.createOscillator();
     var g = audioContext.createGain();
     g.gain.value = 0;
@@ -1283,18 +1283,17 @@ var ClientLoader = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]=
   function ClientLoader(audioFiles) {var options = arguments[1];if(options === void 0)options = {};
     super$0.call(this, options.name || 'loader', true, options.color);
 
-    this.__audioFiles = audioFiles;
-    this.__fileProgress = [];
+    this._audioFiles = audioFiles;
+    this._fileProgress = [];
 
     this.audioBuffers = null;
 
     var viewContent = document.createElement('div');
-    viewContent.classList.add('centered-content');
+    viewContent.classList.add(['centered-content', 'soft-blink']);
     this.view.appendChild(viewContent);
 
     var loadingText = document.createElement('p');
-    loadingText.classList.add('soft-blink');
-    loadingText.innerHTML = "Loading files…";
+    loadingText.innerHTML = "Loading sounds…";
     viewContent.appendChild(loadingText);
 
     var progressWrap = document.createElement('div');
@@ -1312,9 +1311,9 @@ var ClientLoader = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]=
     super$0.prototype.start.call(this);
 
     var loader = new AudioBufferLoader();
-    loader.progressCallback = this.__progressCallback.bind(this);
+    loader.progressCallback = this._progressCallback.bind(this);
     
-    loader.load(this.__audioFiles)
+    loader.load(this._audioFiles)
       .then(
         function(audioBuffers)  {
           this$0.audioBuffers = audioBuffers;
@@ -1325,12 +1324,12 @@ var ClientLoader = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]=
       );
   };
 
-  proto$0.__progressCallback = function(obj) {
+  proto$0._progressCallback = function(obj) {
     var progress = 0;
-    this.__fileProgress[obj.index] = obj.value;
+    this._fileProgress[obj.index] = obj.value;
 
-    for (var i = 0; i < this.__fileProgress.length; i++) {
-      progress += this.__fileProgress[i] / this.__audioFiles.length;
+    for (var i = 0; i < this._fileProgress.length; i++) {
+      progress += this._fileProgress[i] / this._audioFiles.length;
     }
 
     progress = Math.ceil(progress * 100);
@@ -1386,25 +1385,25 @@ var ClientModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]=
 
   proto$0.setCenteredViewContent = function(htmlContent) {
     if (this.view) {
-      if (!this.__centeredViewContent) {
+      if (!this._centeredViewContent) {
         var contentDiv = document.createElement('div');
 
         contentDiv.classList.add('centered-content');
         this.view.appendChild(contentDiv);
 
-        this.__centeredViewContent = contentDiv;
+        this._centeredViewContent = contentDiv;
       }
 
       if (htmlContent) {
-        this.__centeredViewContent.innerHTML = htmlContent;
+        this._centeredViewContent.innerHTML = htmlContent;
       }
     }
   };
 
   proto$0.removeCenteredViewContent = function() {
-    if (this.view && this.__centeredViewContent) {
-      this.view.removeChild(this.__centeredViewContent);
-      delete this.__centeredViewContent;
+    if (this.view && this._centeredViewContent) {
+      this.view.removeChild(this._centeredViewContent);
+      delete this._centeredViewContent;
     }
   };
 MIXIN$0(ClientModule.prototype,proto$0);proto$0=void 0;return ClientModule;})(EventEmitter);
@@ -1426,22 +1425,22 @@ var ClientOrientation = (function(super$0){var PRS$0 = (function(o,t){o["__proto
 
     this.angleReference = 0;
 
-    this.__angle = 0;
-    this.__text = options.text || "Point the phone exactly in front of you, and touch the screen.";
+    this._angle = 0;
+    this._text = options.text || "Point the phone exactly in front of you, and touch the screen.";
 
     input.enableDeviceOrientation();
 
     input.on('deviceorientation', function(orientationData)  {
-      this$0.__angle = orientationData.alpha;
+      this$0._angle = orientationData.alpha;
     });
   }if(super$0!==null)SP$0(ClientOrientation,super$0);ClientOrientation.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientOrientation,"configurable":true,"writable":true}});DP$0(ClientOrientation,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {var this$0 = this;
     super$0.prototype.start.call(this);
-    this.setCenteredViewContent('<p>' + this.__text + '</p>');
+    this.setCenteredViewContent('<p>' + this._text + '</p>');
 
     this.view.addEventListener('click', function()  {
-      this$0.angleReference = this$0.__angle;
+      this$0.angleReference = this$0._angle;
       this$0.done();
     });
   };
@@ -1677,9 +1676,11 @@ var ClientSync = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"
 
   proto$0.syncStatusReport = function(message, report) {
     if(message === 'sync:status') {
-      if (!this.ready) {
-        this.ready = true;
-        this.done();
+      if(report.status === 'training' || report.status === 'sync') {
+        if(!this.ready) {
+          this.ready = true;
+          this.done();
+        }
       }
       this.emit('sync:status', report);
     }
@@ -9433,6 +9434,9 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
 
     this.status = 'new';
     this.statusChangedTime = 0;
+
+    this.connectionStatus = 'offline';
+    this.connectionStatusChangedTime = 0;
   }DP$0(SyncClient,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
 
@@ -9447,7 +9451,7 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
   proto$0.setStatus = function(status) {
     if(status !== this.status) {
       this.status = status;
-      this.statusChangedTime = this.getSyncTime();
+      this.statusChangedTime = this.getLocalTime();
     }
     return this;
   };
@@ -9460,7 +9464,59 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
    * @returns {Number} time, in seconds, since last status change.
    */
   proto$0.getStatusDuration = function() {
-    return Math.max(0, this.getSyncTime() - this.statusChangedTime);
+    return Math.max(0, this.getLocalTime() - this.statusChangedTime);
+  };
+
+  /**
+   * Set connectionStatus, and set this.connectionStatusChangedTime,
+   * to later use @see {@linkcode
+   * SyncClient~getConnectionStatusDuration}
+   *
+   * @function SyncClient~setConnectionStatus
+   * @param {String} connectionStatus
+   * @returns {Object} this
+   */
+  proto$0.setConnectionStatus = function(connectionStatus) {
+    if(connectionStatus !== this.connectionStatus) {
+      this.connectionStatus = connectionStatus;
+      this.connectionStatusChangedTime = this.getLocalTime();
+    }
+    return this;
+  };
+
+  /**
+   * Get time since last connectionStatus change. @see {@linkcode
+   * SyncClient~setConnectionStatus}
+   *
+   * @function SyncClient~getConnectionStatusDuration
+   * @returns {Number} time, in seconds, since last connectionStatus
+   * change.
+   */
+  proto$0.getConnectionStatusDuration = function() {
+    return Math.max(0, this.getLocalTime() - this.connectionStatusChangedTime);
+  };
+
+  /**
+   * Report the status of the synchronisation process, if
+   * reportFunction is defined.
+   *
+   * @param {SyncClient~reportFunction} reportFunction
+   */
+  proto$0.reportStatus = function(reportFunction) {
+    if(typeof reportFunction !== 'undefined') {
+      reportFunction('sync:status', {
+        status: this.status,
+        statusDuration: this.getStatusDuration(),
+        timeOffset: this.timeOffset,
+        frequencyRatio: this.frequencyRatio,
+        connection: this.connectionStatus,
+        connectionDuration: this.getConnectionStatusDuration(),
+        connectionTimeOut: this.pingTimeoutDelay.current,
+        travelDuration: this.travelDuration,
+        travelDurationMin: this.travelDurationMin,
+        travelDurationMax: this.travelDurationMax
+      });
+    }
   };
 
   /**
@@ -9469,8 +9525,9 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
    * @private
    * @function SyncClient~__syncLoop
    * @param {SyncClient~sendFunction} sendFunction
+   * @param {SyncClient~reportFunction} reportFunction
    */
-  proto$0.__syncLoop = function(sendFunction) {var this$0 = this;
+  proto$0.__syncLoop = function(sendFunction, reportFunction) {var this$0 = this;
     clearTimeout(this.timeoutId);
     ++this.pingId;
     sendFunction('sync:ping', this.pingId, this.getLocalTime());
@@ -9480,7 +9537,10 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
       this$0.pingTimeoutDelay.current = Math.min(this$0.pingTimeoutDelay.current * 2,
                                                this$0.pingTimeoutDelay.max);
       debug('sync:ping timeout > %s', this$0.pingTimeoutDelay.current);
-      this$0.__syncLoop(sendFunction); // retry (yes, always increment pingId)
+      this$0.setConnectionStatus('offline');
+      this$0.reportStatus(reportFunction);
+      // retry (yes, always increment pingId)
+      this$0.__syncLoop(sendFunction, reportFunction);
     }, 1000 * this.pingTimeoutDelay.current);
   };
 
@@ -9497,6 +9557,7 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
    */
   proto$0.start = function(sendFunction, receiveFunction, reportFunction) {var this$0 = this;
     this.setStatus('startup');
+    this.setConnectionStatus('offline');
 
     this.streakData = [];
     this.streakDataNextIndex = 0;
@@ -9509,6 +9570,7 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
       if (pingId === this$0.pingId) {
         ++this$0.pingStreakCount;
         clearTimeout(this$0.timeoutId);
+        this$0.setConnectionStatus('online');
         // reduce timeout duration on pong, for better reactivity
         this$0.pingTimeoutDelay.current = Math.max(this$0.pingTimeoutDelay.current * 0.75,
                                                  this$0.pingTimeoutDelay.min);
@@ -9626,27 +9688,19 @@ var SyncClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};r
           this$0.travelDurationMax = sorted[0][0];
           this$0.travelDurationMax = sorted[sorted.length - 1][0];
 
-          reportFunction('sync:status', {
-            status: this$0.status,
-            statusDuration: this$0.getStatusDuration(),
-            timeOffset: this$0.timeOffset,
-            frequencyRatio: this$0.frequencyRatio,
-            travelDuration: this$0.travelDuration,
-            travelDurationMin: this$0.travelDurationMin,
-            travelDurationMax: this$0.travelDurationMax
-          });
+          this$0.reportStatus(reportFunction);
         } else {
           // we are in a streak, use the pingInterval value
           this$0.pingDelay = this$0.pingStreakPeriod;
         }
 
         setTimeout(function()  {
-          this$0.__syncLoop(sendFunction);
+          this$0.__syncLoop(sendFunction, reportFunction);
         }, 1000 * this$0.pingDelay);
       }  // ping and pong ID match
     }); // receive function
 
-    this.__syncLoop(sendFunction);
+    this.__syncLoop(sendFunction, reportFunction);
   };
 
   /**

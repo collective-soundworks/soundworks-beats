@@ -14,7 +14,7 @@
     "ejs": "^2.3.1",
     "express": "^4.8.6",
     "socket.io": "1.1.0",
-    "soundworks": "collective-soundworks/soundworks#v0.3.3"
+    "soundworks": "collective-soundworks/soundworks#dd8b9a1b736f9543e9fc881fbb09e50e68dcfc28"
   },
   "devDependencies": {
     "browserify": "~5.11.0",
