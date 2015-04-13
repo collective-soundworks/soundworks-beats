@@ -161,7 +161,52 @@ class BeatsClientPerformance extends clientSide.Performance {
       this.view.innerHTML = '';
       for(let k in report) {
         if(report.hasOwnProperty(k) ) {
-          this.view.innerHTML += k + ': ' + report[k] + '<br>';
+          switch(k) {
+          case 'status':
+            this.view.innerHTML += 'status: ' + report[k] + '<br>';
+            break;
+          case 'statusDuration':
+            this.view.innerHTML += 'status for: ' +
+              report[k].toFixed(0) + '"<br>';
+            break;
+          case 'timeOffset':
+            this.view.innerHTML += 'time offset: ' +
+              report[k].toString().replace('.', '"') + '<br>';
+            break;
+          case 'frequencyRatio':
+            this.view.innerHTML += 'frequency ratio: ' + report[k] +
+              '"<br>';
+            break;
+          case 'connection':
+            this.view.innerHTML += 'connection: ';
+            if(report[k] === 'offline') {
+              this.view.innerHTML += '<b>OFFLINE</b>';
+            } else {
+              this.view.innerHTML += report[k];
+            }
+            this.view.innerHTML += '<br>';
+            break;
+          case 'connectionDuration':
+            this.view.innerHTML += 'connection for: ' +
+              report[k].toFixed(0) + '" <br>';
+            break;
+          case 'connectionTimeOut':
+            this.view.innerHTML += 'connection time out: ' +
+              report[k].toFixed(1).replace('.', '"') + '<br>';
+            break;
+          case 'travelDuration':
+            this.view.innerHTML += 'travel duration: ' +
+              report[k].toFixed(3).replace('.', '"') + '<br>';
+            break;
+          case 'travelDurationMin':
+            this.view.innerHTML += 'travel duration min: ' +
+              report[k].toFixed(3).replace('.', '"') + '<br>';
+            break;
+          case 'travelDurationMax':
+            this.view.innerHTML += 'travel duration max: ' +
+              report[k].toFixed(3).replace('.', '"') + '<br>';
+            break;
+          }
         }
       }
     });
@@ -173,7 +218,7 @@ window.addEventListener('load', () => {
 
   const welcome = new clientSide.Dialog({
     id: 'welcome',
-    text: '<p>Welcome to <b>Beats</b>.</p> <p>Touch the screen to join!</p>',
+    text: '<p>Welcome to <b>Beats</b>.</p> <p>Touch the screen to start.</p>',
     activateAudio: true
   });
 

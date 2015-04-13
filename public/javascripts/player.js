@@ -16268,7 +16268,52 @@ var BeatsClientPerformance = (function(super$0){super$0=clientSide.Performance;i
       this$0.view.innerHTML = '';
       for(var k in report) {
         if(report.hasOwnProperty(k) ) {
-          this$0.view.innerHTML += k + ': ' + report[k] + '<br>';
+          switch(k) {
+          case 'status':
+            this$0.view.innerHTML += 'status: ' + report[k] + '<br>';
+            break;
+          case 'statusDuration':
+            this$0.view.innerHTML += 'status for: ' +
+              report[k].toFixed(0) + '"<br>';
+            break;
+          case 'timeOffset':
+            this$0.view.innerHTML += 'time offset: ' +
+              report[k].toString().replace('.', '"') + '<br>';
+            break;
+          case 'frequencyRatio':
+            this$0.view.innerHTML += 'frequency ratio: ' + report[k] +
+              '"<br>';
+            break;
+          case 'connection':
+            this$0.view.innerHTML += 'connection: ';
+            if(report[k] === 'offline') {
+              this$0.view.innerHTML += '<b>OFFLINE</b>';
+            } else {
+              this$0.view.innerHTML += report[k];
+            }
+            this$0.view.innerHTML += '<br>';
+            break;
+          case 'connectionDuration':
+            this$0.view.innerHTML += 'connection for: ' +
+              report[k].toFixed(0) + '" <br>';
+            break;
+          case 'connectionTimeOut':
+            this$0.view.innerHTML += 'connection time out: ' +
+              report[k].toFixed(1).replace('.', '"') + '<br>';
+            break;
+          case 'travelDuration':
+            this$0.view.innerHTML += 'travel duration: ' +
+              report[k].toFixed(3).replace('.', '"') + '<br>';
+            break;
+          case 'travelDurationMin':
+            this$0.view.innerHTML += 'travel duration min: ' +
+              report[k].toFixed(3).replace('.', '"') + '<br>';
+            break;
+          case 'travelDurationMax':
+            this$0.view.innerHTML += 'travel duration max: ' +
+              report[k].toFixed(3).replace('.', '"') + '<br>';
+            break;
+          }
         }
       }
     });
@@ -16280,7 +16325,7 @@ window.addEventListener('load', function()  {
 
   var welcome = new clientSide.Dialog({
     id: 'welcome',
-    text: '<p>Welcome to <b>Beats</b>.</p> <p>Touch the screen to join!</p>',
+    text: '<p>Welcome to <b>Beats</b>.</p> <p>Touch the screen to start.</p>',
     activateAudio: true
   });
 
