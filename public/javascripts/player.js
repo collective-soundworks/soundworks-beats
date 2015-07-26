@@ -804,6 +804,133 @@ function plural(ms, n, name) {
 
 },{}],5:[function(require,module,exports){
 /**
+ * @fileoverview Soundworks client side calibration module
+ * @author Jean-Philippe.Lambert@ircam.fr
+ */
+'use strict';
+
+var ClientModule = require('./ClientModule');
+var Calibration = require('calibration/client');
+var client = require('./client');
+
+var ClientCalibration = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientCalibration, super$0);var proto$0={};
+  /**
+   * Function called when an update happened.
+   *
+   * See {@linkcode ClientCalibration~load}.
+   *
+   * @callback ClientCalibration~updateFunction
+   **/
+
+  /**
+   * Constructor of the calibration client module.
+   *
+   * Note that {@linkcode ClientCalibration~start} method must be
+   * called to restore a previous calibration.
+   *
+   * @constructs ClientCalibration
+   * @param {Object} [params]
+   * @param {String} [params.name='calibration'] name of module
+   * @param {String} [params.color='black'] background
+   * @param {ClientCalibration~updateFunction} [params.updateFunction]
+   * Called whenever the calibration changed. First to complete the
+   * start, by calling done, and then each time the calibration is
+   * restored from the server, because this is asynchronous.
+   */
+  function ClientCalibration() {var params = arguments[0];if(params === void 0)params = {};
+    super$0.call(this, params.name || 'calibration', true, params.color || 'black');
+    var that = this;
+
+    this.ready = false;
+    this.started = false;
+
+    // undefined is fine
+    this.updateFunction = params.updateFunction;
+
+    this.calibration = new Calibration({
+      sendFunction: client.send,
+      receiveFunction: client.receive,
+      updateFunction: function()  { that.__calibrationUpdated(); }
+    });
+
+    this.setCenteredViewContent('<p class="soft-blink">Calibration, stand by…</p>');
+  }if(super$0!==null)SP$0(ClientCalibration,super$0);ClientCalibration.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientCalibration,"configurable":true,"writable":true}});DP$0(ClientCalibration,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  /**
+   * Register the receive functions, and restore the calibration from
+   * local storage, or from the server.
+   *
+   * @function ClientCalibration~start
+   */
+  proto$0.start = function() {
+    super$0.prototype.start.call(this);
+    // load previous calibration on start.
+    this.load();
+    // done when actually loaded
+  };
+
+  /**
+   * Save calibration locally, and on the server.
+   *
+   * @function ClientCalibration~save
+   */
+  proto$0.save = function() {
+    this.calibration.save();
+  };
+
+  /**
+   * Load calibration locally, or from the server.
+   *
+   * The calibration is loaded from the server when no local
+   * configuration is found. Note that loading from the server is
+   * asynchronous. See {@linkcode ClientCalibration~updateFunction}
+   * passed to the constructor.
+   *
+   * @function ClientCalibration~load
+   */
+  proto$0.load = function() {
+    this.calibration.load();
+  };
+
+  /**
+   * Locally set the calibrated values.
+   *
+   * @function ClientCalibration~set
+   * @param {calibration} params
+   */
+  proto$0.set = function(params) {
+    this.calibration.set(params);
+  };
+
+  /**
+   * Locally get the calibrated values.
+   *
+   * Note that {@linkcode CalibrationClient~load} method must be
+   * called to restore a previous calibration.
+   *
+   * @function ClientCalibration~get
+   * @returns {calibration} or the empty object {} if no calibration
+   * is available.
+   */
+  proto$0.get = function() {
+    return this.calibration.get();
+  };
+
+  proto$0.__calibrationUpdated = function() {
+    if(!this.started) {
+      this.started = true;
+      this.done();
+    }
+    if(typeof this.updateFunction !== 'undefined') {
+      this.updateFunction();
+    }
+  };
+MIXIN$0(ClientCalibration.prototype,proto$0);proto$0=void 0;return ClientCalibration;})(ClientModule);
+
+module.exports = ClientCalibration;
+
+},{"./ClientModule":12,"./client":20,"calibration/client":23}],6:[function(require,module,exports){
+/**
  * @fileoverview Soundworks client side check-in module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
  */
@@ -811,138 +938,119 @@ function plural(ms, n, name) {
 
 var ClientModule = require('./ClientModule');
 var client = require('./client');
+var input = require('./input');
 
 function instructions(label) {
   return "<p>Go to</p>" +
-          "<div class='checkin-label circled'><span>" + label + "</span></div>" +
-          "<p><small>Touch the screen<br/>when you are ready.</small></p>";
+    "<div class='checkin-label circled'><span>" + label + "</span></div>" +
+    "<p><small>Touch the screen<br/>when you are ready.</small></p>";
 }
 
 var ClientCheckin = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientCheckin, super$0);var proto$0={};
   function ClientCheckin() {var options = arguments[0];if(options === void 0)options = {};
-    super$0.call(this, options.name || 'checkin', true, options.color);
+    super$0.call(this, options.name || 'checkin', options.hasView || true, options.color);
 
-    this.select = options.select || 'automatic'; // 'automatic' | 'label' | 'location'
     this.instructions = options.instructions || instructions;
 
-    switch (this.select) {
-      case 'automatic':
-        this.order = options.order || 'ascending'; // 'ascending' | 'random'
-        break;
-
-      case 'label':
-        break;
-
-      case 'location':
-        break;
-    }
-
+    this.index = -1;
     this.label = null;
+    this._bypassView = options.bypassView || false;
+
+    this._acknowledgementHandler = this._acknowledgementHandler.bind(this);
+    this._unavailableHandler = this._unavailableHandler.bind(this);
+    this._viewClickHandler = this._viewClickHandler.bind(this);
   }if(super$0!==null)SP$0(ClientCheckin,super$0);ClientCheckin.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientCheckin,"configurable":true,"writable":true}});DP$0(ClientCheckin,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {
     super$0.prototype.start.call(this);
 
-    switch (this.select) {
-      case 'automatic':
-        this._startSelectAutomatic();
-        break;
+    client.send(this.name + ':request');
 
-      case 'label':
-        this._startSelectLabel();
-        break;
+    client.receive(this.name + ':acknowledge', this._acknowledgementHandler);
+    client.receive(this.name + ':unavailable', this._unavailableHandler);
+  };
 
-      case 'location':
-        this._startSelectLocation();
-        break;
+  proto$0.reset = function() {
+    super$0.prototype.reset.call(this);
+
+    client.removeListener(this.name + ':acknowledge', this._acknowledgementHandler);
+    client.removeListener(this.name + ':unavailable', this._unavailableHandler);
+    this.view.removeEventListener('click', this._viewClickHandler, false);
+  };
+
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+
+    client.send(this.name + ':restart', this.index, this.label, client.coordinates);
+    this.done();
+  };
+
+  proto$0._acknowledgementHandler = function(index, label, coordinates) {
+    this.index = index;
+
+    if (coordinates)
+      client.coordinates = coordinates;
+
+    if (label) {
+      this.label = label;
+
+      if (!this._bypassView) {
+        var htmlContent = this.instructions(label);
+        this.setCenteredViewContent(htmlContent);
+        this.view.addEventListener('click', this._viewClickHandler, false);
+      } else {
+        this.done();
+      }
+
+    } else {
+      this.done();
     }
   };
 
-  proto$0._startSelectAutomatic = function() {var this$0 = this;
-    client.send('checkin:automatic:request', this.order);
-
-    client.receive('checkin:automatic:acknowledge', function(index, label, coordinates)  {
-      client.index = index;
-
-      if(coordinates)
-        client.coordinates = coordinates;
-
-      if (label) {
-        this$0.label = label;
-
-        var htmlContent = this$0.instructions(label);
-
-        this$0.setCenteredViewContent(htmlContent);
-
-        this$0.view.addEventListener('click', function()  {
-          this$0.done();
-        });
-      } else {
-        this$0.done();
-      }
-    });
-
-    client.receive('checkin:automatic:unavailable', function()  {
-      this$0.setCenteredViewContent("<p>Sorry, we cannot accept any more connections at the moment, please try again later.</p>");
-    });
+  proto$0._unavailableHandler = function() {
+    this.setCenteredViewContent("<p>Sorry, we cannot accept any more connections at the moment, please try again later.</p>");
   };
 
-  proto$0._startSelectLabel = function() {var this$0 = this;
-    client.send('checkin:label:request');
-
-    // not yet implemented
-    client.receive('checkin:label:options', function(options)  {
-      // TODO: construct selection from options and let the participant select a label
-      this$0.label = null;
-
-      client.send('checkin:label:set', this$0.label);
-    });
-
-    client.receive('checkin:label:acknowledge', function(index)  {
-      client.index = index;
-      this$0.done();
-    });
-  };
-
-  proto$0._startSelectLocation = function() {var this$0 = this;
-    client.send('checkin:location:request');
-
-    // not yet implemented
-    client.receive('checkin:location:acknowledge', function(index, surface)  {
-      client.index = index;
-
-      // TODO: display surface and let the participant select his or her location
-      client.coordinates = null;
-
-      // send the coordinates of the selected location to server
-      client.send('checkin:location:set', client.coordinates);
-    });
-
-    client.receive('checkin:location:unavailable', function()  {
-      this$0.setCenteredViewContent("<p>Sorry, we cannot accept any more connections at the moment, please try again later.</p>");
-    });
+  proto$0._viewClickHandler = function() {
+    this.done();
   };
 MIXIN$0(ClientCheckin.prototype,proto$0);proto$0=void 0;return ClientCheckin;})(ClientModule);
 
 module.exports = ClientCheckin;
-},{"./ClientModule":9,"./client":15}],6:[function(require,module,exports){
+
+},{"./ClientModule":12,"./client":20,"./input":22}],7:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side control module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
  */
-'use strict';var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function GET_ITER$0(v){if(v){if(Array.isArray(v))return 0;var f;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){if(S_MARK$0)S_MARK$0(void 0);return f.call(v);}if(S_MARK$0)S_MARK$0(void 0);if((v+'')==='[object Generator]')return v;}throw new Error(v+' is not iterable')};
+'use strict';var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function GET_ITER$0(v){if(v){if(Array.isArray(v))return 0;var f;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){if(S_MARK$0)S_MARK$0(void 0);return f.call(v);}if(S_MARK$0)S_MARK$0(void 0);if((v+'')==='[object Generator]')return v;}throw new Error(v+' is not iterable')};
 
 var ClientModule = require('./ClientModule');
 var client = require('./client');
 
-var ParameterNumber = (function(){var proto$0={};
-  function ParameterNumber(parameter) {var view = arguments[1];if(view === void 0)view = null;var this$0 = this;
-    this.type = 'number';
-    this.name = parameter.name;
-    this.label = parameter.label;
-    this.min = parameter.min;
-    this.max = parameter.max;
-    this.step = parameter.step;
+var ControlEvent = (function(){var proto$0={};
+  function ControlEvent(type, name, label) {
+    this.type = type;
+    this.name = name;
+    this.label = label;
+    this.value = undefined;
+  }DP$0(ControlEvent,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  proto$0.set = function(val) {
+
+  };
+
+  proto$0.send = function() {
+    client.send('control:event', this.name, this.value);
+  };
+MIXIN$0(ControlEvent.prototype,proto$0);proto$0=void 0;return ControlEvent;})();
+
+var ControlNumber = (function(super$0){if(!PRS$0)MIXIN$0(ControlNumber, super$0);var proto$0={};
+  function ControlNumber(init) {var view = arguments[1];if(view === void 0)view = null;var this$0 = this;
+    super$0.call(this, 'number', init.name, init.label);
+    this.min = init.min;
+    this.max = init.max;
+    this.step = init.step;
     this.box = null;
 
     if (view) {
@@ -956,23 +1064,26 @@ var ParameterNumber = (function(){var proto$0={};
 
       box.onchange = (function()  {
         var val = Number(box.value);
-        this$0.set(val, true);
+        this$0.set(val);
+        this$0.send();
       });
 
       var incrButton = document.createElement('button');
       incrButton.setAttribute('id', this.name + '-incr');
       incrButton.setAttribute('width', '0.5em');
       incrButton.innerHTML = '>';
-      incrButton.onclick = incrButton.ontouchstart = (function()  {
-        this$0.incr(true);
+      incrButton.onclick = (function()  {
+        this$0.incr();
+        this$0.send();
       });
 
       var decrButton = document.createElement('button');
       decrButton.setAttribute('id', this.name + '-descr');
       decrButton.style.width = '0.5em';
       decrButton.innerHTML = '<';
-      decrButton.onclick = decrButton.ontouchstart = (function()  {
-        this$0.decr(true);
+      decrButton.onclick = (function()  {
+        this$0.decr();
+        this$0.send();
       });
 
       var label = document.createElement('span');
@@ -988,36 +1099,31 @@ var ParameterNumber = (function(){var proto$0={};
       view.appendChild(div);
     }
 
-    this.set(parameter.value);
-  }DP$0(ParameterNumber,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+    this.set(init.value);
+  }if(super$0!==null)SP$0(ControlNumber,super$0);ControlNumber.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ControlNumber,"configurable":true,"writable":true}});DP$0(ControlNumber,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.set = function(val) {var send = arguments[1];if(send === void 0)send = false;
     this.value = Math.min(this.max, Math.max(this.min, val));
 
     if (this.box)
       this.box.value = val;
-
-    if (send)
-      client.send('control:parameter', this.name, this.value);
   };
 
-  proto$0.incr = function() {var send = arguments[0];if(send === void 0)send = false;
+  proto$0.incr = function() {
     var steps = Math.floor(this.value / this.step + 0.5);
-    this.set(this.step * (steps + 1), send);
+    this.set(this.step * (steps + 1));
   };
 
-  proto$0.decr = function() {var send = arguments[0];if(send === void 0)send = false;
+  proto$0.decr = function() {
     var steps = Math.floor(this.value / this.step + 0.5);
-    this.set(this.step * (steps - 1), send);
+    this.set(this.step * (steps - 1));
   };
-MIXIN$0(ParameterNumber.prototype,proto$0);proto$0=void 0;return ParameterNumber;})();
+MIXIN$0(ControlNumber.prototype,proto$0);proto$0=void 0;return ControlNumber;})(ControlEvent);
 
-var ParameterSelect = (function(){var proto$0={};
-  function ParameterSelect(parameter) {var $D$0;var $D$1;var $D$2;var $D$3;var view = arguments[1];if(view === void 0)view = null;var this$0 = this;
-    this.type = 'select';
-    this.name = parameter.name;
-    this.label = parameter.label;
-    this.options = parameter.options;
+var ControlSelect = (function(super$0){if(!PRS$0)MIXIN$0(ControlSelect, super$0);var proto$0={};
+  function ControlSelect(init) {var $D$0;var $D$1;var $D$2;var $D$3;var view = arguments[1];if(view === void 0)view = null;var this$0 = this;
+    super$0.call(this, 'select', init.name, init.label);
+    this.options = init.options;
     this.box = null;
 
     if (view) {
@@ -1032,23 +1138,26 @@ var ParameterSelect = (function(){var proto$0={};
       };$D$0 = $D$1 = $D$2 = $D$3 = void 0;
 
       box.onchange = (function()  {
-        this$0.set(box.value, true);
+        this$0.set(box.value);
+        this$0.send();
       });
 
       var incrButton = document.createElement('button');
       incrButton.setAttribute('id', this.name + '-incr');
       incrButton.setAttribute('width', '0.5em');
       incrButton.innerHTML = '>';
-      incrButton.onclick = incrButton.ontouchstart = (function()  {
-        this$0.incr(true);
+      incrButton.onclick = (function()  {
+        this$0.incr();
+        this$0.send();
       });
 
       var decrButton = document.createElement('button');
       decrButton.setAttribute('id', this.name + '-descr');
       decrButton.style.width = '0.5em';
       decrButton.innerHTML = '<';
-      decrButton.onclick = decrButton.ontouchstart = (function()  {
-        this$0.decr(true);
+      decrButton.onclick = (function()  {
+        this$0.decr();
+        this$0.send();
       });
 
       var label = document.createElement('span');
@@ -1064,8 +1173,8 @@ var ParameterSelect = (function(){var proto$0={};
       view.appendChild(div);
     }
 
-    this.set(parameter.value);
-  }DP$0(ParameterSelect,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+    this.set(init.value);
+  }if(super$0!==null)SP$0(ControlSelect,super$0);ControlSelect.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ControlSelect,"configurable":true,"writable":true}});DP$0(ControlSelect,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.set = function(val) {var send = arguments[1];if(send === void 0)send = false;
     var index = this.options.indexOf(val);
@@ -1076,27 +1185,23 @@ var ParameterSelect = (function(){var proto$0={};
 
       if (this.box)
         this.box.value = val;
-
-      if (send)
-        client.send('control:parameter', this.name, val);
     }
   };
 
-  proto$0.incr = function() {var send = arguments[0];if(send === void 0)send = false;
+  proto$0.incr = function() {
     this.index = (this.index + 1) % this.options.length;
-    this.set(this.options[this.index], send);
+    this.set(this.options[this.index]);
   };
 
-  proto$0.decr = function() {var send = arguments[0];if(send === void 0)send = false;
+  proto$0.decr = function() {
     this.index = (this.index + this.options.length - 1) % this.options.length;
-    this.set(this.options[this.index], send);
+    this.set(this.options[this.index]);
   };
-MIXIN$0(ParameterSelect.prototype,proto$0);proto$0=void 0;return ParameterSelect;})();
+MIXIN$0(ControlSelect.prototype,proto$0);proto$0=void 0;return ControlSelect;})(ControlEvent);
 
-var Info = (function(){var proto$0={};
-  function Info(info) {var view = arguments[1];if(view === void 0)view = null;
-    this.name = info.name;
-    this.label = info.label;
+var ControlInfo = (function(super$0){if(!PRS$0)MIXIN$0(ControlInfo, super$0);var proto$0={};
+  function ControlInfo(init) {var view = arguments[1];if(view === void 0)view = null;
+    super$0.call(this, 'info', init.name, init.label);
     this.box = null;
 
     if (view) {
@@ -1114,8 +1219,8 @@ var Info = (function(){var proto$0={};
       view.appendChild(div);
     }
 
-    this.set(info.value);
-  }DP$0(Info,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+    this.set(init.value);
+  }if(super$0!==null)SP$0(ControlInfo,super$0);ControlInfo.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ControlInfo,"configurable":true,"writable":true}});DP$0(ControlInfo,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.set = function(val) {
     this.value = val;
@@ -1123,12 +1228,11 @@ var Info = (function(){var proto$0={};
     if (this.box)
       this.box.innerHTML = val;
   };
-MIXIN$0(Info.prototype,proto$0);proto$0=void 0;return Info;})();
+MIXIN$0(ControlInfo.prototype,proto$0);proto$0=void 0;return ControlInfo;})(ControlEvent);
 
-var Command = (function(){
-  function Command(command) {var view = arguments[1];if(view === void 0)view = null;var this$0 = this;
-    this.name = command.name;
-    this.label = command.label;
+var ControlCommand = (function(super$0){if(!PRS$0)MIXIN$0(ControlCommand, super$0);
+  function ControlCommand(init) {var view = arguments[1];if(view === void 0)view = null;var this$0 = this;
+    super$0.call(this, 'command', init.name, init.label);
 
     if (view) {
       var div = document.createElement('div');
@@ -1136,124 +1240,144 @@ var Command = (function(){
       div.classList.add('command');
       div.innerHTML = this.label;
 
-      div.onclick = div.ontouchstart = (function()  {
-        client.send('control:command', this$0.name);
+      div.onclick = (function()  {
+        this$0.send();
       });
 
       view.appendChild(div);
       view.appendChild(document.createElement('br'));
     }
-  }DP$0(Command,"prototype",{"configurable":false,"enumerable":false,"writable":false});
-;return Command;})();
+  }if(super$0!==null)SP$0(ControlCommand,super$0);ControlCommand.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ControlCommand,"configurable":true,"writable":true}});DP$0(ControlCommand,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+;return ControlCommand;})(ControlEvent);
 
-var ClientControl = (function(super$0){var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientControl, super$0);var proto$0={};
+var ClientControl = (function(super$0){if(!PRS$0)MIXIN$0(ClientControl, super$0);var proto$0={};
   function ClientControl() {var options = arguments[0];if(options === void 0)options = {};var this$0 = this;
     var hasGui = (options.gui === true);
 
     super$0.call(this, options.name || 'control', hasGui, options.color);
 
     this.hasGui = hasGui;
-    this.parameters = {};
-    this.infos = {};
-    this.commands = {};
+    this.events = {};
 
     var view = hasGui ? this.view : null;
 
-    client.receive('control:init', function(parameters, infos, commands)  {var $D$4;var $D$5;var $D$6;var $D$7;
+    client.receive('control:init', function(events)  {var $D$4;var $D$5;var $D$6;var $D$7;
       if (view) {
         var title = document.createElement('h1');
         title.innerHTML = 'Conductor';
         view.appendChild(title);
       }
 
-      $D$7 = (Object.keys(infos));$D$4 = GET_ITER$0($D$7);$D$6 = $D$4 === 0;$D$5 = ($D$6 ? $D$7.length : void 0);for (var key ;$D$6 ? ($D$4 < $D$5) : !($D$5 = $D$4["next"]())["done"];)
-{key = ($D$6 ? $D$7[$D$4++] : $D$5["value"]);this$0.infos[key] = new Info(infos[key], view);};$D$4 = $D$5 = $D$6 = $D$7 = void 0;
+      $D$7 = (Object.keys(events));$D$4 = GET_ITER$0($D$7);$D$6 = $D$4 === 0;$D$5 = ($D$6 ? $D$7.length : void 0);for (var key ;$D$6 ? ($D$4 < $D$5) : !($D$5 = $D$4["next"]())["done"];){key = ($D$6 ? $D$7[$D$4++] : $D$5["value"]);
+        var event = events[key];
 
-      if (view)
-        {view.appendChild(document.createElement('hr'));}
-
-      $D$7 = (Object.keys(parameters));$D$4 = GET_ITER$0($D$7);$D$6 = $D$4 === 0;$D$5 = ($D$6 ? $D$7.length : void 0);for (var key$0 ;$D$6 ? ($D$4 < $D$5) : !($D$5 = $D$4["next"]())["done"];){key$0 = ($D$6 ? $D$7[$D$4++] : $D$5["value"]);
-        var parameter = parameters[key$0];
-
-        switch (parameter.type) {
+        switch (event.type) {
           case 'number':
-            this$0.parameters[key$0] = new ParameterNumber(parameter, view);
+            this$0.events[key] = new ControlNumber(event, view);
             break;
 
           case 'select':
-            this$0.parameters[key$0] = new ParameterSelect(parameter, view);
+            this$0.events[key] = new ControlSelect(event, view);
+            break;
+
+          case 'info':
+            this$0.events[key] = new ControlInfo(event, view);
+            break;
+
+          case 'command':
+            this$0.events[key] = new ControlCommand(event, view);
             break;
         }
       };$D$4 = $D$5 = $D$6 = $D$7 = void 0;
 
-      if (view)
-        {view.appendChild(document.createElement('hr'));}
-
-      $D$7 = (Object.keys(commands));$D$4 = GET_ITER$0($D$7);$D$6 = $D$4 === 0;$D$5 = ($D$6 ? $D$7.length : void 0);for (var key$1 ;$D$6 ? ($D$4 < $D$5) : !($D$5 = $D$4["next"]())["done"];)
-{key$1 = ($D$6 ? $D$7[$D$4++] : $D$5["value"]);this$0.commands[key$1] = new Command(commands[key$1], view);};$D$4 = $D$5 = $D$6 = $D$7 = void 0;
+      if (!view)
+        this$0.done();
     });
 
-    // listen to parameter changes
-    client.receive('control:parameter', function(name, val)  {
-      var parameter = this$0.parameters[name];
+    // listen to events
+    client.receive('control:event', function(name, val)  {
+      var event = this$0.events[name];
 
-      if (parameter) {
-        parameter.set(val);
-        this$0.emit('control:parameter', name, val);
-      } else
-        console.log('received unknown control parameter: ', name);
-    });
-
-    // listen to info changes
-    client.receive('control:info', function(name, val)  {
-      var info = this$0.infos[name];
-
-      if (info) {
-        info.set(val);
-        this$0.emit('control:info', name, val);
-      } else
-        console.log('received unknown info parameter: ', name);
+      if (event) {
+        event.set(val);
+        this$0.emit('control:event', name, val);
+      }
+      else
+        console.log('client control: received unknown event "' + name + '"');
     });
   }if(super$0!==null)SP$0(ClientControl,super$0);ClientControl.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientControl,"configurable":true,"writable":true}});DP$0(ClientControl,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {
     super$0.prototype.start.call(this);
+    client.send('control:request');
+  };
 
-    if (!this.hasGui)
-      this.done();
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+    client.send('control:request'); 
+  };
+  
+  proto$0.send = function(name) {
+    var event = this.events[name];
+
+    if (event) {
+      event.send();
+    }
+  };
+  
+  proto$0.update = function(name, val) {
+    var event = this.events[name];
+
+    if (event) {
+      event.set(val);
+      event.send();
+    }
   };
 MIXIN$0(ClientControl.prototype,proto$0);proto$0=void 0;return ClientControl;})(ClientModule);
 
 module.exports = ClientControl;
-},{"./ClientModule":9,"./client":15}],7:[function(require,module,exports){
+},{"./ClientModule":12,"./client":20}],8:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side dialog module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
  */
 'use strict';
 
+var client = require('./client');
 var ClientModule = require('./ClientModule');
 var audioContext = require('waves-audio').audioContext;
+
+function base64(format, base64) {
+  return (("data:" + format) + (";base64," + base64) + "");
+}
 
 var ClientDialog = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientDialog, super$0);var proto$0={};
   function ClientDialog() {var options = arguments[0];if(options === void 0)options = {};
     super$0.call(this, options.name || 'dialog', true, options.color);
 
-    this._mustActivateAudio = options.activateAudio || false;
+    this._mustActivateAudio = !!options.activateAudio;
+    this._mustWakeLock = !!options.wakeLock;
     this._text = options.text || "Hello!";
+
+    this._clickHandler = this._clickHandler.bind(this);
   }if(super$0!==null)SP$0(ClientDialog,super$0);ClientDialog.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientDialog,"configurable":true,"writable":true}});DP$0(ClientDialog,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
-  proto$0.start = function() {var this$0 = this;
+  proto$0.start = function() {
     super$0.prototype.start.call(this);
-    this.setCenteredViewContent('<p>' + this._text + '</p>');
+    this.setCenteredViewContent(this._text);
 
+    // initialize video element for wakeLocking
+    this._initWakeLock();
     // install click listener
-    this.view.addEventListener('click', function()  {
-      if (this$0._mustActivateAudio)
-        this$0._activateAudio();
+    if (client.platform.isMobile)
+      this.view.addEventListener('touchstart', this._clickHandler);
+    else
+      this.view.addEventListener('click', this._clickHandler);
+  };
 
-      this$0.done();
-    });
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+    this.done();
   };
 
   proto$0._activateAudio = function() {
@@ -1265,10 +1389,92 @@ var ClientDialog = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]=
     o.start(0);
     o.stop(audioContext.currentTime + 0.000001);
   };
+
+  proto$0._clickHandler = function() {
+    if (this._mustActivateAudio)
+      this._activateAudio();
+
+    if (this._mustWakeLock)
+      this._requestWakeLock();
+
+    this.view.removeEventListener('click', this._clickHandler);
+    this.view.removeEventListener('touchstart', this._clickHandler);
+    this.done();
+  };
+
+  // cf. https://github.com/borismus/webvr-boilerplate/blob/8abbc74cfa5976b9ab0c388cb0c51944008c6989/js/webvr-manager.js#L268-L289
+  proto$0._initWakeLock = function() {var this$0 = this;
+    this._wakeLockVideo = document.createElement('video');
+
+    this._wakeLockVideo.addEventListener('ended', function()  {
+      this$0._wakeLockVideo.play();
+    });
+  };
+
+  proto$0._requestWakeLock = function() {
+    var os = client.platform.os;
+    this._releaseWakeClock();
+
+    if (os === 'ios') {
+      if (this._wakeLockTimer) return;
+
+      this._wakeLockTimer = setInterval(function()  {
+        window.location = window.location;
+        setTimeout(window.stop, 0);
+      }, 30000);
+    } else if (os === 'android') {
+      if (this._wakeLockVideo.paused === false) return;
+
+      this._wakeLockVideo.src = base64('video/webm', 'GkXfowEAAAAAAAAfQoaBAUL3gQFC8oEEQvOBCEKChHdlYm1Ch4ECQoWBAhhTgGcBAAAAAAACWxFNm3RALE27i1OrhBVJqWZTrIHfTbuMU6uEFlSua1OsggEuTbuMU6uEHFO7a1OsggI+7AEAAAAAAACkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmAQAAAAAAAEMq17GDD0JATYCMTGF2ZjU2LjQuMTAxV0GMTGF2ZjU2LjQuMTAxc6SQ20Yv/Elws73A/+KfEjM11ESJiEBkwAAAAAAAFlSuawEAAAAAAABHrgEAAAAAAAA+14EBc8WBAZyBACK1nIN1bmSGhVZfVlA4g4EBI+ODhAT3kNXgAQAAAAAAABKwgRC6gRBTwIEBVLCBEFS6gRAfQ7Z1AQAAAAAAALHngQCgAQAAAAAAAFyho4EAAIAQAgCdASoQABAAAEcIhYWIhYSIAgIADA1gAP7/q1CAdaEBAAAAAAAALaYBAAAAAAAAJO6BAaWfEAIAnQEqEAAQAABHCIWFiIWEiAICAAwNYAD+/7r/QKABAAAAAAAAQKGVgQBTALEBAAEQEAAYABhYL/QACAAAdaEBAAAAAAAAH6YBAAAAAAAAFu6BAaWRsQEAARAQABgAGFgv9AAIAAAcU7trAQAAAAAAABG7j7OBALeK94EB8YIBgfCBAw==');
+      this._wakeLockVideo.play();
+    }
+  };
+
+  proto$0._releaseWakeClock = function() {
+    var os = client.platform.os;
+
+    if (os === 'ios') {
+      if (this._wakeLockTimer) {
+        clearInterval(this._wakeLockTimer);
+        this._wakeLockTimer = null;
+      }
+    } else if (os === 'android') {
+      this._wakeLockVideo.pause();
+      this._wakeLockVideo.src = '';
+    }
+  };
 MIXIN$0(ClientDialog.prototype,proto$0);proto$0=void 0;return ClientDialog;})(ClientModule);
 
 module.exports = ClientDialog;
-},{"./ClientModule":9,"waves-audio":85}],8:[function(require,module,exports){
+},{"./ClientModule":12,"./client":20,"waves-audio":98}],9:[function(require,module,exports){
+'use strict';
+
+var client = require('./client');
+var ClientModule = require('./ClientModule');
+
+var Filelist = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(Filelist, super$0);var proto$0={};
+  function Filelist() {var options = arguments[0];if(options === void 0)options = {};
+    super$0.call(this, options.name || 'filelist', false);
+
+    this.folder = options.folder || '';
+    this.extensions = options.extensions || undefined;
+    this.files = null;
+  }if(super$0!==null)SP$0(Filelist,super$0);Filelist.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":Filelist,"configurable":true,"writable":true}});DP$0(Filelist,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  proto$0.start = function() {var this$0 = this;
+    super$0.prototype.start.call(this);
+
+    client.send(this.name + ':request', this.folder, this.extensions);
+    client.receive(this.name + ':files', function(files)  {
+      this$0.files = files;
+      this$0.emit(this$0.name + ':files', files);
+      this$0.done();
+    }, this);
+  };
+MIXIN$0(Filelist.prototype,proto$0);proto$0=void 0;return Filelist;})(ClientModule);
+
+module.exports = Filelist;
+},{"./ClientModule":12,"./client":20}],10:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side module base class
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
@@ -1280,107 +1486,473 @@ var client = require('./client');
 var AudioBufferLoader = require('waves-loaders').AudioBufferLoader;
 
 var ClientLoader = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientLoader, super$0);var proto$0={};
-  function ClientLoader(audioFiles) {var options = arguments[1];if(options === void 0)options = {};
+  function ClientLoader() {var options = arguments[0];if(options === void 0)options = {};
     super$0.call(this, options.name || 'loader', true, options.color);
 
-    this._audioFiles = audioFiles;
-    this._fileProgress = [];
+    this.extensions = options.extensions ||  ['.wav', '.mp3'];
 
-    this.audioBuffers = null;
+    this.files = options.files || null;
+    this.buffers = [];
 
-    var viewContent = document.createElement('div');
-    viewContent.classList.add(['centered-content', 'soft-blink']);
-    this.view.appendChild(viewContent);
+    this._asynchronous = !!options.asynchronous;
 
-    var loadingText = document.createElement('p');
-    loadingText.innerHTML = "Loading sounds…";
-    viewContent.appendChild(loadingText);
+    this._fileProgress = null;
+    this._progressBar = null;
+    this._numFilesLoaded = 0;
 
-    var progressWrap = document.createElement('div');
-    progressWrap.classList.add('progress-wrap');
-    viewContent.appendChild(progressWrap);
+    if (!this._asynchronous) {
+      var viewContent = document.createElement('div');
+      viewContent.classList.add('centered-content');
+      viewContent.classList.add('soft-blink');
+      this.view.appendChild(viewContent);
 
-    var progressBar = document.createElement('div');
-    progressBar.classList.add('progress-bar');
-    progressWrap.appendChild(progressBar);
+      var loadingText = document.createElement('p');
+      loadingText.innerHTML = "Loading sounds…";
+      viewContent.appendChild(loadingText);
 
-    this.progressBar = progressBar;
+      var progressWrap = document.createElement('div');
+      progressWrap.classList.add('progress-wrap');
+      viewContent.appendChild(progressWrap);
+
+      var progressBar = document.createElement('div');
+      progressBar.classList.add('progress-bar');
+      progressWrap.appendChild(progressBar);
+
+      this._progressBar = progressBar;
+    }
   }if(super$0!==null)SP$0(ClientLoader,super$0);ClientLoader.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientLoader,"configurable":true,"writable":true}});DP$0(ClientLoader,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
-  proto$0.start = function() {var this$0 = this;
+  proto$0.start = function() {
     super$0.prototype.start.call(this);
+    this._load(this.files);
+  };
 
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+    this.done();
+  };
+
+  proto$0._loadFile = function(index, file) {var this$0 = this;
     var loader = new AudioBufferLoader();
-    loader.progressCallback = this._progressCallback.bind(this);
-    
-    loader.load(this._audioFiles)
-      .then(
-        function(audioBuffers)  {
-          this$0.audioBuffers = audioBuffers;
+
+    loader
+      .load([file])
+      .then(function(buffers)  {
+        var buffer = buffers[0];
+
+        this$0.buffers[index] = buffer;
+        this$0.emit('loader:fileLoaded', index, file, buffer);
+
+        this$0._numFilesLoaded++;
+        if (this$0._numFilesLoaded >= this$0.buffers.length)
+          this$0.emit('loader:allFilesLoaded');
+      }, function(error)  {
+        console.log(error);
+      });
+  };
+
+  proto$0._load = function(fileList) {var this$0 = this;
+    if (this._asynchronous) {
+      for (var i = 0; i < fileList.length; i++)
+        this._loadFile(i, fileList[i]);
+
+      this.done();
+    } else {
+      var loader = new AudioBufferLoader();
+
+      this._fileProgress = [];
+
+      for(var i$0 = 0; i$0 < fileList.length; i$0++)
+        this._fileProgress[i$0] = 0;
+
+      loader.progressCallback = this._progressCallback.bind(this);
+      loader.load(fileList)
+        .then(function(buffers)  {
+          this$0.buffers = buffers;
+          this$0.emit('loader:allFilesLoaded');
           this$0.done();
         }, function(error)  {
           console.log(error);
-        }
-      );
+        });
+    }
   };
 
   proto$0._progressCallback = function(obj) {
     var progress = 0;
-    this._fileProgress[obj.index] = obj.value;
+    var fileIndex = obj.index;
+    var fileProgress = obj.value;
+
+    this._fileProgress[fileIndex] = fileProgress;
 
     for (var i = 0; i < this._fileProgress.length; i++) {
-      progress += this._fileProgress[i] / this._audioFiles.length;
+      progress += this._fileProgress[i] / this._fileProgress.length;
     }
 
     progress = Math.ceil(progress * 100);
-    this.progressBar.style.width = progress + "%";
+    this._progressBar.style.width = progress + "%";
   };
-
 MIXIN$0(ClientLoader.prototype,proto$0);proto$0=void 0;return ClientLoader;})(ClientModule);
 
 module.exports = ClientLoader;
-},{"./ClientModule":9,"./client":15,"waves-loaders":94}],9:[function(require,module,exports){
+},{"./ClientModule":12,"./client":20,"waves-loaders":107}],11:[function(require,module,exports){
 /**
- * @fileoverview Soundworks client side module base class
+ * @fileoverview Soundworks client side check-in module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
  */
 'use strict';
 
+var ClientModule = require('./ClientModule');
+var client = require('./client');
+var input = require('./input');
+
+function instructions(label) {
+  return "<p>Go to</p>" +
+    "<div class='checkin-label circled'><span>" + label + "</span></div>" +
+    "<p><small>Touch the screen<br/>when you are ready.</small></p>";
+}
+
+var ClientLocator = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientLocator, super$0);var proto$0={};
+  function ClientLocator() {var options = arguments[0];if(options === void 0)options = {};
+    super$0.call(this, options.name || 'locator', true, options.color);
+
+    this.select = options.select || 'automatic'; // 'automatic' | 'label' | 'location'
+    this.instructions = options.instructions || instructions;
+    this.setup = options.setup || null;
+    this.showBackground = options.showBackground ||  false;
+
+    this.label = null;
+
+    this._touchStartHandler = this._touchStartHandler.bind(this);
+    this._touchMoveHandler = this._touchMoveHandler.bind(this);
+    this._touchEndHandler = this._touchEndHandler.bind(this);
+    this._sendCoordinates = this._sendCoordinates.bind(this);
+    this._surfaceHandler = this._surfaceHandler.bind(this);
+
+    this._currentCoordinates = null;
+    this._positionRadius = 20;
+
+    // Explanatory text
+    var textDiv = document.createElement('div');
+    textDiv.classList.add('message');
+    var text = document.createElement('p');
+    // text.innerHTML = "<small>Indicate your location on the map and click &ldquo;OK&rdquo;.</small>";
+    text.innerHTML = "<small>Indiquez votre position sur le plan</small>";
+    this._textDiv = textDiv;
+    this._text = text;
+
+    // Button
+    var button = document.createElement('div');
+    button.classList.add('btn');
+    button.classList.add('disabled');
+    button.innerHTML = "VALIDER";
+    this._button = button;
+
+    // Position circle
+    var positionDiv = document.createElement('div');
+    positionDiv.setAttribute('id', 'position');
+    positionDiv.classList.add('position');
+    positionDiv.classList.add('hidden');
+    positionDiv.style.width = this._positionRadius * 2 + "px";
+    positionDiv.style.height = this._positionRadius * 2 + "px";
+    this._positionDiv = positionDiv;
+
+    // Surface div
+    var surfaceDiv = document.createElement('div');
+    surfaceDiv.setAttribute('id', 'surface');
+    surfaceDiv.classList.add('surface');
+    this._surfaceDiv = surfaceDiv;
+
+    this._textDiv.appendChild(this._text);
+    this._textDiv.appendChild(this._button);
+    this._surfaceDiv.appendChild(this._positionDiv);
+
+    this._resize = this._resize.bind(this);
+  }if(super$0!==null)SP$0(ClientLocator,super$0);ClientLocator.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientLocator,"configurable":true,"writable":true}});DP$0(ClientLocator,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  proto$0.start = function() {
+    super$0.prototype.start.call(this);
+
+    client.send(this.name + ':request');
+    client.receive(this.name + ':surface', this._surfaceHandler, false);
+
+    window.addEventListener('resize', this._resize);
+  };
+
+  proto$0.done = function() {
+    window.removeEventListener('resize', this._resize);
+    super$0.prototype.done.call(this);
+  };
+
+  proto$0.reset = function() {
+    client.coordinates = null;
+
+    this._positionDiv.classList.add('hidden');
+    this._button.classList.add('disabled');
+
+    this._button.removeEventListener('click', this._sendCoordinates, false);
+    this._surfaceDiv.removeEventListener('touchstart', this._touchStartHandler, false);
+    this._surfaceDiv.removeEventListener('touchmove', this._touchMoveHandler, false);
+    this._surfaceDiv.removeEventListener('touchend', this._touchEndHandler, false);
+
+    // TODO: clean surface properly
+    if (this.setup)
+      this.setup.reset();
+  };
+
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+    client.send(this.name + ':restart', client.coordinates);
+    this._button.removeEventListener('click', this._sendCoordinates, false);
+    this.done();
+  };
+
+  proto$0._surfaceHandler = function(surface) {
+    var heightWidthRatio = surface.height / surface.width;
+    var screenHeight = window.innerHeight;
+    var screenWidth = window.innerWidth;
+    var screenRatio = screenHeight / screenWidth;
+    var heightPx, widthPx;
+
+    if (screenRatio > heightWidthRatio) { // TODO: refine sizes, with container, etc.
+      heightPx = screenWidth * heightWidthRatio;
+      widthPx = screenWidth;
+    } else {
+      heightPx = screenHeight;
+      widthPx = screenHeight / heightWidthRatio;
+    }
+
+    this.setup.display(this._surfaceDiv, {
+      showBackground: this.showBackground
+    });
+
+    // Let the participant select his or her location
+    this._surfaceDiv.addEventListener('touchstart', this._touchStartHandler, false);
+    this._surfaceDiv.addEventListener('touchmove', this._touchMoveHandler, false);
+    this._surfaceDiv.addEventListener('touchend', this._touchEndHandler, false);
+
+    // Build text & button interface after receiving and displaying the surface
+    this.view.appendChild(this._surfaceDiv);
+    this.view.appendChild(this._textDiv);
+
+    this._resize();
+    // Send the coordinates of the selected location to server
+    this._button.addEventListener('click', this._sendCoordinates, false);
+  };
+
+  proto$0._resize = function() {
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    var orientation = width > height ? 'landscape' : 'portrait';
+    this.view.classList.remove('landscape', 'portrait');
+    this.view.classList.add(orientation);
+
+    var min = Math.min(width, height);
+
+    this._surfaceDiv.style.width = (("" + min) + "px");
+    this._surfaceDiv.style.height = (("" + min) + "px");
+
+    switch (orientation) {
+      case 'landscape' :
+        this._textDiv.style.height = (("" + height) + "px");
+        this._textDiv.style.width = (("" + (width - height)) + "px");
+        break;
+      case 'portrait':
+        this._textDiv.style.height = (("" + (height - width)) + "px");
+        this._textDiv.style.width = (("" + width) + "px");
+        break;
+    }
+  };
+
+  proto$0._sendCoordinates = function() {
+    if (this._currentCoordinates !== null) {
+      this._button.classList.add('selected');
+      client.coordinates = this._currentCoordinates;
+      client.send(this.name + ':coordinates', client.coordinates);
+      this.done();
+    }
+  };
+
+  proto$0._touchStartHandler = function(e) {
+    e.preventDefault();
+
+    if (this._positionDiv.classList.contains('hidden')) {
+      this._positionDiv.classList.remove('hidden');
+      this._button.classList.remove('disabled');
+    }
+
+    // TODO: handle mirror
+    this._positionDiv.style.left = e.changedTouches[0].clientX - this._positionRadius + "px";
+    this._positionDiv.style.top = e.changedTouches[0].clientY - this._positionRadius + "px";
+  };
+
+  proto$0._touchMoveHandler = function(e) {
+    e.preventDefault();
+
+    // TODO: handle mirror
+    this._positionDiv.style.left = e.changedTouches[0].clientX - this._positionRadius + "px";
+    this._positionDiv.style.top = e.changedTouches[0].clientY - this._positionRadius + "px";
+
+    // TODO: handle out-of-bounds
+  };
+
+  proto$0._touchEndHandler = function(e) {
+    e.preventDefault();
+
+    // TODO: handle mirror
+    this._positionDiv.style.left = e.changedTouches[0].clientX - this._positionRadius + "px";
+    this._positionDiv.style.top = e.changedTouches[0].clientY - this._positionRadius + "px";
+
+    var x = (e.changedTouches[0].clientX - this._surfaceDiv.offsetLeft) / this._surfaceDiv.offsetWidth;
+    var y = (e.changedTouches[0].clientY - this._surfaceDiv.offsetTop) / this._surfaceDiv.offsetHeight;
+
+    this._currentCoordinates = [x, y];
+
+    // TODO: handle out-of-bounds
+  };
+MIXIN$0(ClientLocator.prototype,proto$0);proto$0=void 0;return ClientLocator;})(ClientModule);
+
+module.exports = ClientLocator;
+},{"./ClientModule":12,"./client":20,"./input":22}],12:[function(require,module,exports){
+/**
+ * @fileoverview Soundworks client side module base class
+ * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
+ */
+'use strict';var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;var SLICE$0 = Array.prototype.slice;var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function GET_ITER$0(v){if(v){if(Array.isArray(v))return 0;var f;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){if(S_MARK$0)S_MARK$0(void 0);return f.call(v);}if(S_MARK$0)S_MARK$0(void 0);if((v+'')==='[object Generator]')return v;}throw new Error(v+' is not iterable')};
+
 var EventEmitter = require('events').EventEmitter;
 var container = window.container || (window.container = document.getElementById('container'));
 
-var ClientModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientModule, super$0);var proto$0={};
-  function ClientModule(name) {var hasView = arguments[1];if(hasView === void 0)hasView = true;var viewColor = arguments[2];if(viewColor === void 0)viewColor = 'black';
+var Promised = (function(super$0){if(!PRS$0)MIXIN$0(Promised, super$0);var proto$0={};
+  function Promised() {
+    this.resolvePromised = null;
+  }if(super$0!==null)SP$0(Promised,super$0);Promised.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":Promised,"configurable":true,"writable":true}});DP$0(Promised,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  proto$0.createPromise = function() {var this$0 = this;
+    return new Promise(function(resolve)  {return this$0.resolvePromised = resolve});
+  };
+
+  proto$0.launch = function() {
+
+  };
+MIXIN$0(Promised.prototype,proto$0);proto$0=void 0;return Promised;})(EventEmitter);
+
+var Sequential = (function(super$0){if(!PRS$0)MIXIN$0(Sequential, super$0);var proto$0={};
+  function Sequential(modules) {
     super$0.call(this);
 
-    this.view = null;
+    this.modules = modules;
+  }if(super$0!==null)SP$0(Sequential,super$0);Sequential.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":Sequential,"configurable":true,"writable":true}});DP$0(Sequential,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
-    if (hasView) {
+  proto$0.createPromise = function() {var $D$0;var $D$1;var $D$2;var $D$3;
+    var mod = null;
+    var promise = null;
+
+    $D$3 = (this.modules);$D$0 = GET_ITER$0($D$3);$D$2 = $D$0 === 0;$D$1 = ($D$2 ? $D$3.length : void 0);for(var next ;$D$2 ? ($D$0 < $D$1) : !($D$1 = $D$0["next"]())["done"];){next = ($D$2 ? $D$3[$D$0++] : $D$1["value"]);(function(next){
+      if(mod !== null) 
+        promise.then(function()  {return next.launch()});
+
+      mod = next;
+      promise = mod.createPromise();
+    })(next);};$D$0 = $D$1 = $D$2 = $D$3 = void 0;
+
+    return promise;
+  };
+
+  proto$0.launch = function() {
+    return this.modules[0].launch();
+  };
+MIXIN$0(Sequential.prototype,proto$0);proto$0=void 0;return Sequential;})(Promised);
+
+var Parallel = (function(super$0){if(!PRS$0)MIXIN$0(Parallel, super$0);var proto$0={};
+  function Parallel(modules) {var $D$4;var $D$5;var $D$6;
+    super$0.call(this);
+
+    this.modules = modules;
+
+    // set z-index of parallel modules
+    var zIndex = modules.length;
+    $D$4 = GET_ITER$0(modules);$D$6 = $D$4 === 0;$D$5 = ($D$6 ? modules.length : void 0);for(var mod ;$D$6 ? ($D$4 < $D$5) : !($D$5 = $D$4["next"]())["done"];){mod = ($D$6 ? modules[$D$4++] : $D$5["value"]);
+      mod.zIndex = zIndex;
+      zIndex--;
+    };$D$4 = $D$5 = $D$6 = void 0;
+  }if(super$0!==null)SP$0(Parallel,super$0);Parallel.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":Parallel,"configurable":true,"writable":true}});DP$0(Parallel,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  proto$0.createPromise = function() {
+    return Promise.all(this.modules.map(function(mod)  {return mod.createPromise()}));
+  };
+
+  proto$0.launch = function() {var $D$7;var $D$8;var $D$9;var $D$10;
+    $D$10 = (this.modules);$D$7 = GET_ITER$0($D$10);$D$9 = $D$7 === 0;$D$8 = ($D$9 ? $D$10.length : void 0);for(var mod ;$D$9 ? ($D$7 < $D$8) : !($D$8 = $D$7["next"]())["done"];)
+{mod = ($D$9 ? $D$10[$D$7++] : $D$8["value"]);mod.launch();};$D$7 = $D$8 = $D$9 = $D$10 = void 0;
+  };
+MIXIN$0(Parallel.prototype,proto$0);proto$0=void 0;return Parallel;})(Promised);
+
+var ClientModule = (function(super$0){if(!PRS$0)MIXIN$0(ClientModule, super$0);var proto$0={};
+  function ClientModule(name) {var createView = arguments[1];if(createView === void 0)createView = true;var color = arguments[2];if(color === void 0)color = 'black';
+    super$0.call(this);
+
+    this.name = name;
+
+    this.view = null;
+    this.ownsView = false;
+    this.showsView = false;
+
+    if (createView) {
       var div = document.createElement('div');
       div.setAttribute('id', name);
       div.classList.add(name);
       div.classList.add('module');
-      div.classList.add(viewColor);
+      div.classList.add(color);
 
       this.view = div;
+      this.ownsView = true;
     }
 
+    this.isStarted = false;
     this.isDone = false;
-  }if(super$0!==null)SP$0(ClientModule,super$0);ClientModule.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientModule,"configurable":true,"writable":true}});DP$0(ClientModule,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+  }if(super$0!==null)SP$0(ClientModule,super$0);ClientModule.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientModule,"configurable":true,"writable":true}, zIndex: {"set": $zIndex_set$0, "configurable":true,"enumerable":true}});DP$0(ClientModule,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {
-    if (this.view)
-      container.appendChild(this.view);
+    if(!this.isStarted) {
+      if (this.view) {
+        container.appendChild(this.view);
+        this.showsView = true;
+      }
+
+      this.isStarted = true;
+    }
+  };
+
+  proto$0.reset = function() {
+    this.isStarted = false;    
+  };
+
+  proto$0.restart = function() {
+    this.isDone = false;
+  };
+
+  proto$0.launch = function() {
+    if (this.isDone) {
+      this.restart();
+    } else {
+      if (this.isStarted)
+        this.reset();
+
+      this.start();
+    }
   };
 
   proto$0.done = function() {
-    if (this.view)
-      container.removeChild(this.view);
+    this.isDone = true;
 
-    if (!this.isDone) {
-      this.isDone = true;
-      this.emit('done', this);
+    if (this.view && this.showsView && this.ownsView) {
+      container.removeChild(this.view);
+      this.showsView = false;
     }
+
+    if(this.resolvePromised)
+      this.resolvePromised();
   };
 
   proto$0.setCenteredViewContent = function(htmlContent) {
@@ -1406,10 +1978,23 @@ var ClientModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]=
       delete this._centeredViewContent;
     }
   };
-MIXIN$0(ClientModule.prototype,proto$0);proto$0=void 0;return ClientModule;})(EventEmitter);
+
+  function $zIndex_set$0(value) {
+    if(this.view)
+      this.view.style.zIndex = value;
+  }
+MIXIN$0(ClientModule.prototype,proto$0);proto$0=void 0;return ClientModule;})(Promised);
+
+ClientModule.sequential = function() {var modules = SLICE$0.call(arguments, 0);
+  return new Sequential(modules);
+};
+
+ClientModule.parallel = function() {var modules = SLICE$0.call(arguments, 0);
+  return new Parallel(modules);
+};
 
 module.exports = ClientModule;
-},{"events":1}],10:[function(require,module,exports){
+},{"events":1}],13:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side orientation module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
@@ -1447,7 +2032,7 @@ var ClientOrientation = (function(super$0){var PRS$0 = (function(o,t){o["__proto
 MIXIN$0(ClientOrientation.prototype,proto$0);proto$0=void 0;return ClientOrientation;})(ClientModule);
 
 module.exports = ClientOrientation;
-},{"./ClientModule":9,"./input":17}],11:[function(require,module,exports){
+},{"./ClientModule":12,"./input":22}],14:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side performance base class module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
@@ -1459,83 +2044,293 @@ var client = require('./client');
 
 var ClientPerformance = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientPerformance, super$0);var proto$0={};
   function ClientPerformance() {var options = arguments[0];if(options === void 0)options = {};
-    super$0.call(this, options.name || 'performance', true, options.color);
+    super$0.call(this, options.name || 'performance', true, options.color || 'black');
   }if(super$0!==null)SP$0(ClientPerformance,super$0);ClientPerformance.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientPerformance,"configurable":true,"writable":true}});DP$0(ClientPerformance,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {
     super$0.prototype.start.call(this);
-
-    client.send('performance:start');
+    client.send(this.name + ':start');
   };
 
   proto$0.done = function() {
-    client.send('performance:done');
-
+    client.send(this.name + ':done');
     super$0.prototype.done.call(this);
   };
 MIXIN$0(ClientPerformance.prototype,proto$0);proto$0=void 0;return ClientPerformance;})(ClientModule);
 
 module.exports = ClientPerformance;
-},{"./ClientModule":9,"./client":15}],12:[function(require,module,exports){
+},{"./ClientModule":12,"./client":20}],15:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side platform check module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
  */
 'use strict';
 
+var client = require('./client');
 var ClientModule = require('./ClientModule');
+var audioContext = require('waves-audio').audioContext;
 var platform = require('platform');
 
-function parseVersionString(string) {
-  if (string) {
-    var a = string.split('.');
-
-    if (a[1] >= 0)
-      return parseFloat(a[0] + "." + a[1]);
-
-    return parseFloat(a[0]);
-  }
-
-  return null;
-}
+var defaultMessages = {
+  iosVersion: "This application requires at least iOS 7 with Safari or Chrome.",
+  androidVersion: "This application requires at least Android 4.2 with Chrome.",
+  wrongOS: "This application is designed for iOS and Android mobile devices."
+};
 
 var ClientPlatform = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientPlatform, super$0);var proto$0={};
   function ClientPlatform() {var options = arguments[0];if(options === void 0)options = {};
     super$0.call(this, options.name || 'platform-check', true, options.color);
+
+    this.prefix = options.prefix ||  '';
+    this.postfix = options.postfix ||  '';
+    this.messages = options.messages || defaultMessages;
+    this.bypass = options.bypass || false;
   }if(super$0!==null)SP$0(ClientPlatform,super$0);ClientPlatform.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientPlatform,"configurable":true,"writable":true}});DP$0(ClientPlatform,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {
     super$0.prototype.start.call(this);
 
-    var osVersion = parseVersionString(platform.os.version);
-    var browserVersion = parseVersionString(platform.version);
     var msg = null;
+    var os = client.platform.os;
+    var isMobile = client.platform.isMobile;
 
-    if (platform.os.family == "iOS") {
-      if (osVersion < 7)
-        msg = "This application requires at least iOS 7.<br/>You have iOS " + platform.os.version + ".";
-    } else if (platform.os.family == "Android") {
-      if (osVersion < 4.2)
-        msg = "This application requires at least Android 4.2.<br/>You have Android " + platform.os.version + ".";
-      else if (platform.name != 'Chrome Mobile')
-        msg = "You have to use Chrome to run this application on an Android device.";
-      else if (browserVersion < 35)
-        msg = "Consider updating Chrome to a more recent version to run this application.";
-    } else {
-      msg = "This application is designed for mobile devices and currently runs on iOS or Android only.";
+    if (this.bypass) 
+      return this.done();
+
+    if (!audioContext) {
+      if (os === 'ios') {
+        msg = this.messages.iosVersion;
+      } else if (os === 'android') {
+        msg = this.messages.androidVersion;
+      } else {
+        msg = this.messages.wrongOS;
+      }
+    } else if (!isMobile || client.platform.os === 'other') {
+      msg = this.messages.wrongOS;
+    } else if (client.platform.os === 'ios' && platform.os.version < '7') {
+      msg = this.messages.iosVersion;
+    } else if (client.platform.os === 'android' && platform.os.version < '4.2') {
+      msg = this.messages.androidVersion;
     }
 
     if (msg !== null) {
-      this.setCenteredViewContent('<p>' + msg + '</p>');
+      this.setCenteredViewContent(this.prefix + '<p>' + msg + '</p>' + this.postfix);
     } else {
       this.done();
     }
   };
 
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+    this.done();
+  };
 MIXIN$0(ClientPlatform.prototype,proto$0);proto$0=void 0;return ClientPlatform;})(ClientModule);
 
 module.exports = ClientPlatform;
-},{"./ClientModule":9,"platform":18}],13:[function(require,module,exports){
+
+},{"./ClientModule":12,"./client":20,"platform":29,"waves-audio":98}],16:[function(require,module,exports){
+'use strict';
+
+var client = require('./client');
+var ClientModule = require('./ClientModule');
+
+function toTitleCase(str) {
+  return str.replace(/\w\S*/g, function(txt) {
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+  });
+}
+
+function convertName(name) {
+  var a = name.split("_");
+  var n = "";
+  for (var i = 0; i < a.length; i++) {
+    if (i === 0)
+      n += toTitleCase(a[i]);
+    else
+      n += " " + a[i];
+  }
+  return n;
+}
+
+var ClientSelector = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientSelector, super$0);var proto$0={};
+  function ClientSelector() {var options = arguments[0];if(options === void 0)options = {};
+    super$0.call(this, options.name || 'selector', !options.view);
+
+    this.labels = options.labels || [];
+    this.states = options.states || [];
+    this.defaultState = options.defaultState || 'unselected';
+
+    this.maxSelected = 1;
+    this.selected = [];
+
+    if (typeof options.maxSelected !== 'undefined')
+      this.maxSelected = options.maxSelected;
+
+    if(options.view) {
+      this.view = options.view;
+      this.isDone = undefined; // skip super.done()
+    }
+
+    this._buttons = [];
+    this._listeners = [];
+  }if(super$0!==null)SP$0(ClientSelector,super$0);ClientSelector.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientSelector,"configurable":true,"writable":true}, labels: {"get": $labels_get$0, "set": $labels_set$0, "configurable":true,"enumerable":true}});DP$0(ClientSelector,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  proto$0._setupButton = function(index, label, state) {
+    var button = document.createElement('div');
+    button.classList.add('btn');
+    button.innerHTML = convertName(label);
+    this._buttons[index] = button;
+
+    switch (state) {
+      case 'disabled':
+        button.classList.add('disabled');
+        break;
+
+      case 'unselected':
+        this.enable(index);
+        break;
+
+      case 'selected':
+        this.enable(index);
+        this.select(index);
+        break;
+    }
+
+    this.view.appendChild(button);
+  };
+
+  proto$0.start = function() {
+    super$0.prototype.start.call(this);
+
+    for (var i = 0; i < this._labels.length; i++) {
+      var label = this._labels[i];
+      var state = this.defaultState;
+
+      if (i < this.states.length)
+        state = this.states[i];
+
+      this.states[i] = 'disabled';
+      this._listeners[i] = null;
+      this._setupButton(i, label, state);
+    }
+  };
+
+  proto$0.reset = function() {
+    var buttons = this.view.querySelectorAll('.btn');
+    for (var i = 0; i < buttons.length; i++)
+      this.view.removeChild(buttons[i]);
+     
+    this.selected = [];
+    this._buttons = [];
+    this._listeners = []; 
+  };
+
+  proto$0.restart = function() {
+    // TODO
+  };
+
+  proto$0.select = function(index) {
+    var state = this.states[index];
+
+    if (state === 'unselected') {
+      // steal oldest selected
+      if (this.selected.length === this.maxSelected)
+        this.unselect(this.selected[0]);
+
+      var button = this._buttons[index];
+
+      button.classList.add('selected');
+      this.states[index] = 'selected';
+
+      // add to list of selected buttons
+      this.selected.push(index);
+
+      var label = this.labels[index];
+      this.emit('selector:select', index, label);
+
+      if (this.selected.length === this.maxSelected)
+        this.done(); // TODO: beware, might cause problems with the launch thing
+
+      return true;
+    }
+
+    return false;
+  };
+
+  proto$0.unselect = function(index) {
+    var state = this.states[index];
+
+    if (state === 'selected') {
+      var button = this._buttons[index];
+
+      button.classList.remove('selected');
+      this.states[index] = 'unselected';
+
+      // unselect oldest selected button
+      var selectedIndex = this.selected.indexOf(index);
+      this.selected.splice(selectedIndex, 1);
+
+      var label = this.labels[index];
+      this.emit('selector:unselect', index, label);
+
+      return false;
+    }
+
+    return true;
+  };
+
+  proto$0.toggle = function(index) {
+    return this.select(index) || this.unselect(index);
+  };
+
+  proto$0.enable = function(index) {var this$0 = this;
+    var state = this.states[index];
+
+    if (state === 'disabled') {
+      this.states[index] = 'unselected';
+
+      var listener = (function()  {return this$0.toggle(index)});
+      this._listeners[index] = listener;
+
+      var button = this._buttons[index];
+      button.classList.remove('disabled');
+      if (client.platform.isMobile)
+        button.addEventListener('touchstart', listener, false);  
+      else
+        button.addEventListener('click', listener, false);
+    }
+  };
+
+  proto$0.disable = function(index) {
+    var state = this.states[index];
+
+    if (state === 'selected')
+      this.unselect(index);
+
+    if (state === 'unselected') {
+      this.states[index] = 'disabled';
+
+      var button = this._buttons[index];
+      var listener = this._listeners[index];
+      button.classList.add('disabled');
+      if (client.platform.isMobile)
+        button.removeListener('touchstart', listener);
+      else
+        button.removeListener('click', listener);
+    }
+  };
+
+  function $labels_set$0(list) {
+    this._labels = list;
+  }
+
+  function $labels_get$0() {
+    return this._labels;
+  }
+MIXIN$0(ClientSelector.prototype,proto$0);proto$0=void 0;return ClientSelector;})(ClientModule);
+
+module.exports = ClientSelector;
+},{"./ClientModule":12,"./client":20}],17:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side seat map module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
@@ -1545,7 +2340,7 @@ module.exports = ClientPlatform;
 var ClientModule = require('./ClientModule');
 var client = require('./client');
 
-var ClientSetup = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientSetup, super$0);var proto$0={};
+var ClientSetup = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientSetup, super$0);var proto$0={};var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function GET_ITER$0(v){if(v){if(Array.isArray(v))return 0;var f;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){if(S_MARK$0)S_MARK$0(void 0);return f.call(v);}if(S_MARK$0)S_MARK$0(void 0);if((v+'')==='[object Generator]')return v;}throw new Error(v+' is not iterable')};
   function ClientSetup() {var options = arguments[0];if(options === void 0)options = {};
     super$0.call(this, options.name || 'setup', false);
 
@@ -1554,26 +2349,62 @@ var ClientSetup = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={
     this.spacing = 1;
     this.labels = [];
     this.coordinates = [];
+    this.type = undefined;
+
+    this._xFactor = 1;
+    this._yFactor = 1;
   }if(super$0!==null)SP$0(ClientSetup,super$0);ClientSetup.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientSetup,"configurable":true,"writable":true}});DP$0(ClientSetup,"prototype",{"configurable":false,"enumerable":false,"writable":false});
 
   proto$0.start = function() {var this$0 = this;
     super$0.prototype.start.call(this);
 
-    client.send('setup:request');
+    client.send(this.name + ':request');
 
-    client.receive('setup:init', function(setup)  {
+    client.receive(this.name + ':init', function(setup)  {
       this$0.width = setup.width;
       this$0.height = setup.height;
       this$0.spacing = setup.spacing;
       this$0.labels = setup.labels;
       this$0.coordinates = setup.coordinates;
+      this$0.type = setup.type;
+      this$0.background = setup.background;
 
       this$0.done();
     });
   };
 
-  proto$0.display = function(div) {
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+
+    this.done();
+  };
+
+  proto$0.display = function(div) {var options = arguments[1];if(options === void 0)options = {};
     div.classList.add('setup');
+
+    if (options && options.transform){
+      switch (options.transform) {
+        case 'rotate180':
+          div.setAttribute('data-xfactor', -1);
+          div.setAttribute('data-yfactor', -1);
+          break;
+
+        case 'flipX':
+          div.setAttribute('data-xfactor', -1);
+          div.setAttribute('data-yfactor', 1);
+          break;
+
+        case 'flipY':
+          div.setAttribute('data-xfactor', 1);
+          div.setAttribute('data-yfactor', -1);
+          break;
+
+        default:
+          div.setAttribute('data-xfactor', 1);
+          div.setAttribute('data-yfactor', 1);
+          break;
+      }
+    }
 
     var heightWidthRatio = this.height / this.width;
     var screenHeight = window.innerHeight;
@@ -1589,54 +2420,281 @@ var ClientSetup = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={
       widthPx = screenHeight / heightWidthRatio;
     }
 
-    var tileWidth = widthPx / this.width * this.spacing;
-    var tileHeight = heightPx / this.height * this.spacing;
-    var tileSize = Math.min(tileWidth, tileHeight);
-
-    var tileMargin = tileSize / 10;
-
     div.style.height = heightPx + "px";
     div.style.width = widthPx + "px";
 
-    var coordinates = this.coordinates;
+    // add background
+    if (options.showBackground) {
+      div.style.backgroundImage = (("url(" + (this.background)) + ")");
+      div.style.backgroundPosition = '50% 50%';
+      div.style.backgroundRepeat = 'no-repeat';
+      div.style.backgroundSize = 'contain';
+    }
+
+    switch (this.type) {
+      case 'matrix':
+        var positionWidth = widthPx / this.width * this.spacing;
+        var positionHeight = heightPx / this.height * this.spacing;
+        var positionSize = 0.75 * Math.min(positionWidth, positionHeight);
+        var coordinates = this.coordinates;
+
+        this.addPositionPlaceholders(div, coordinates, positionSize);
+        break;
+
+      case 'surface':
+        // todo
+        break;
+    }
+
+  };
+
+  proto$0.addPositionPlaceholders = function(div, coordinates, size) {
+    var containerHeight = div.offsetHeight;
+    var containerWidth = div.offsetWidth;
 
     for (var i = 0; i < coordinates.length; i++) {
-      var tile = document.createElement('div');
-      tile.classList.add('tile');
+      var position = document.createElement('div');
+      position.classList.add('position');
 
-      tile.setAttribute('data-index', i);
-      tile.setAttribute('data-x', coordinates[i][0]);
-      tile.setAttribute('data-y', coordinates[i][1]);
-      tile.style.height = tileSize - 2 * tileMargin + "px";
-      tile.style.width = tileSize - 2 * tileMargin + "px";
-      tile.style.left = coordinates[i][0] * widthPx - (tileSize - 2 * tileMargin) / 2 + "px";
-      tile.style.top = coordinates[i][1] * heightPx - (tileSize - 2 * tileMargin) / 2 + "px";
+      var xOffset = position.coordinates[0] * containerWidth;
+      var yOffset = position.coordinates[1] * containerHeight;
+      var xFactor = parseInt(div.dataset.xfactor);
+      var yFactor = parseInt(div.dataset.yfactor);
 
-      div.appendChild(tile);
+      position.setAttribute('data-index', i);
+      position.style.height = size + "px";
+      position.style.width = size + "px";
+      positionDiv.style.left = 0.5 * containerWidth - (0.5 * containerWidth - xOffset) * xFactor - size * 0.5 + "px";
+      positionDiv.style.top = 0.5 * containerHeight - (0.5 * containerHeight - yOffset) * yFactor - size * 0.5 + "px";
+
+      div.appendChild(position);
+    }
+  };
+
+  proto$0.addPositions = function(div, positions, size) {var $D$0;var $D$1;var $D$2;
+    var containerHeight = div.offsetHeight;
+    var containerWidth = div.offsetWidth;
+
+    $D$0 = GET_ITER$0(positions);$D$2 = $D$0 === 0;$D$1 = ($D$2 ? positions.length : void 0);for (var position ;$D$2 ? ($D$0 < $D$1) : !($D$1 = $D$0["next"]())["done"];){position = ($D$2 ? positions[$D$0++] : $D$1["value"]);
+      var positionDiv = document.createElement('div');
+      positionDiv.classList.add('position');
+      positionDiv.classList.add('player');
+
+      var xOffset = position.coordinates[0] * containerWidth;
+      var yOffset = position.coordinates[1] * containerHeight;
+      var xFactor = parseInt(div.dataset.xfactor);
+      var yFactor = parseInt(div.dataset.yfactor);
+
+      positionDiv.setAttribute('data-index', position.index);
+      positionDiv.style.height = size + "px";
+      positionDiv.style.width = size + "px";
+      positionDiv.style.left = 0.5 * containerWidth - (0.5 * containerWidth - xOffset) * xFactor - size * 0.5 + "px";
+      positionDiv.style.top = 0.5 * containerHeight - (0.5 * containerHeight - yOffset) * yFactor - size * 0.5 + "px";
+
+      div.appendChild(positionDiv);
+    };$D$0 = $D$1 = $D$2 = void 0;
+  };
+
+  proto$0.removePositions = function(div, positions) {var $D$3;var $D$4;var $D$5; // TODO: remove div;
+    $D$3 = GET_ITER$0(positions);$D$5 = $D$3 === 0;$D$4 = ($D$5 ? positions.length : void 0);for (var position ;$D$5 ? ($D$3 < $D$4) : !($D$4 = $D$3["next"]())["done"];){position = ($D$5 ? positions[$D$3++] : $D$4["value"]);
+      var positionDiv = document.querySelector('[data-index="' + position.index + '"]');
+      if (!!positionDiv)
+        positionDiv.parentNode.removeChild(positionDiv);
+    };$D$3 = $D$4 = $D$5 = void 0;
+  };
+
+  proto$0.removeAllPositions = function(div) {
+    var positions = div.querySelectorAll('.player');
+    for (var i = 0; i < positions.length; i++) {
+      div.removeChild(positions[i]);
     }
   };
 
   proto$0.addClassToPosition = function(div, index, className) {
-    var tiles = Array.prototype.slice.call(div.childNodes); // .childNode returns a NodeList
-    var tileIndex = tiles.map(function(t)  {return parseInt(t.dataset.index)}).indexOf(index);
-    var tile = tiles[tileIndex];
+    var positions = Array.prototype.slice.call(div.childNodes); // .childNode returns a NodeList
+    var positionIndex = positions.map(function(t)  {return parseInt(t.dataset.index)}).indexOf(index);
+    var position = positions[positionIndex];
 
-    if (tile)
-      tile.classList.add(className);
+    if (position)
+      position.classList.add(className);
   };
 
   proto$0.removeClassFromPosition = function(div, index, className) {
-    var tiles = Array.prototype.slice.call(div.childNodes); // .childNode returns a NodeList
-    var tileIndex = tiles.map(function(t)  {return parseInt(t.dataset.index)}).indexOf(index);
-    var tile = tiles[tileIndex];
+    var positions = Array.prototype.slice.call(div.childNodes); // .childNode returns a NodeList
+    var positionIndex = positions.map(function(t)  {return parseInt(t.dataset.index)}).indexOf(index);
+    var position = positions[positionIndex];
 
-    if (tile)
-      tile.classList.remove(className);
+    if (position)
+      position.classList.remove(className);
   };
 MIXIN$0(ClientSetup.prototype,proto$0);proto$0=void 0;return ClientSetup;})(ClientModule);
 
 module.exports = ClientSetup;
-},{"./ClientModule":9,"./client":15}],14:[function(require,module,exports){
+},{"./ClientModule":12,"./client":20}],18:[function(require,module,exports){
+var ClientModule = require('./ClientModule');
+var client = require('./client');
+var ns = 'http://www.w3.org/2000/svg';
+
+var ClientSpace = (function(super$0){"use strict";var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(ClientSpace, super$0);var proto$0={};
+  function ClientSpace() {var options = arguments[0];if(options === void 0)options = {};
+    super$0.call(this, options.name || 'space');
+
+    this.width = 1;
+    this.height = 1;
+    // this.spacing = 1;
+    // this.labels = [];
+    // this.coordinates = [];
+    this.type = undefined;
+
+    this._xFactor = 1;
+    this._yFactor = 1;
+
+    this._onSetupInit = this._onSetupInit.bind(this);
+  }if(super$0!==null)SP$0(ClientSpace,super$0);ClientSpace.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ClientSpace,"configurable":true,"writable":true}});DP$0(ClientSpace,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  proto$0._onSetupInit = function(setup) {
+    this.width = setup.width;
+    this.height = setup.height;
+    // this.spacing = setup.spacing;
+    // this.labels = setup.labels;
+    // this.coordinates = setup.coordinates;
+    this.type = setup.type;
+    this.background = setup.background;
+
+    this.done();
+  };
+
+  proto$0.start = function() {
+    super$0.prototype.start.call(this);
+
+    client.receive('setup:init', this._onSetupInit);
+
+    client.send('setup:request');
+  };
+
+  proto$0.restart = function() {
+    super$0.prototype.restart.call(this);
+    this.done();
+  };
+
+  proto$0.reset = function() {
+    client.removeListener('setup:init', this._onSetupInit);
+    this.container.innerHTML = '';
+  };
+
+  proto$0.display = function(container) {var options = arguments[1];if(options === void 0)options = {};
+    this.container = container;
+    this.container.classList.add('space');
+    this.renderingOptions = options;
+
+    if (options.showBackground) {
+      this.container.style.backgroundImage = (("url(" + (this.background)) + ")");
+      this.container.style.backgroundPosition = '50% 50%';
+      this.container.style.backgroundRepeat = 'no-repeat';
+      this.container.style.backgroundSize = 'contain';
+    }
+
+    var svg = document.createElementNS(ns, 'svg');
+    var group = document.createElementNS(ns, 'g');
+
+    svg.appendChild(group);
+    this.container.appendChild(svg);
+
+    this.svg = svg;
+    this.group = group;
+
+    this.resize(this.container);
+    // this.positionIndexElementMap = new Map();
+    this.positionIndexElementMap = {};
+  };
+
+  proto$0.resize = function() {var this$0 = this;
+    var boundingRect = this.container.getBoundingClientRect();
+    var containerWidth = boundingRect.width;
+    var containerHeight = boundingRect.height;
+    var ratio = (function()  {
+      return (this$0.width > this$0.height) ?
+        containerWidth / this$0.width :
+        containerHeight / this$0.height;
+    })();
+    var svgWidth = this.width * ratio;
+    var svgHeight = this.height * ratio;
+    var offsetLeft = (containerWidth - svgWidth) / 2;
+    var offsetTop = (containerHeight - svgHeight) / 2;
+
+    this.svg.setAttributeNS(null, 'width', svgWidth);
+    this.svg.setAttributeNS(null, 'height', svgHeight);
+     // use setup coordinates
+    this.svg.setAttributeNS(null, 'viewBox', (("0 0 " + (this.width)) + (" " + (this.height)) + ""));
+    // center svg in container
+    this.svg.style.position = 'absolute';
+    this.svg.style.left = (("" + offsetLeft) + "px");
+    this.svg.style.top = (("" + offsetTop) + "px");
+
+        // apply rotations
+    if (this.renderingOptions.transform) {
+      switch (this.renderingOptions.transform) {
+        case 'rotate180':
+          this.container.setAttribute('data-xfactor', -1);
+          this.container.setAttribute('data-yfactor', -1);
+          var transform = (("rotate(180, " + (this.width / 2)) + (", " + (this.height / 2)) + ")");
+          this.group.setAttributeNS(null, 'transform', transform);
+          break;
+      }
+    }
+
+    this.svgOffsetLeft = offsetLeft;
+    this.svgOffsetTop = offsetTop;
+    this.svgWidth = svgWidth;
+    this.svgHeight = svgHeight;
+
+    this.ratio = ratio;
+  };
+
+  proto$0.displayPositions = function(positions, size) {var this$0 = this;
+    // clean surface
+    this.removeAllPositions();
+
+    positions.forEach(function(position)  {
+      this$0.addPosition(position, size);
+    });
+  };
+
+  proto$0.addPosition = function(position, size) {
+    var radius = size / 2;
+    var coordinates = position.coordinates;
+    var index = position.index;
+
+    var dot = document.createElementNS(ns, 'circle');
+    dot.setAttributeNS(null, 'r', radius / this.ratio);
+    dot.setAttributeNS(null, 'cx', coordinates[0] * this.width);
+    dot.setAttributeNS(null, 'cy', coordinates[1] * this.height);
+    dot.style.fill = 'steelblue';
+
+    this.group.appendChild(dot);
+    // this.positionIndexElementMap.set(index, dot);
+    this.positionIndexElementMap[index] = dot;
+  };
+
+  proto$0.removePosition = function(position) {
+    // const el = this.positionIndexElementMap.get(position.index);
+    var el = this.positionIndexElementMap[position.index];
+    this.group.removeChild(el);
+  };
+
+  proto$0.removeAllPositions = function() {
+    while (this.group.firstChild) {
+      this.group.removeChild(this.group.firstChild);
+    }
+  };
+
+MIXIN$0(ClientSpace.prototype,proto$0);proto$0=void 0;return ClientSpace;})(ClientModule);
+
+module.exports = ClientSpace;
+
+
+
+},{"./ClientModule":12,"./client":20}],19:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side time syncronization module
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
@@ -1689,129 +2747,148 @@ MIXIN$0(ClientSync.prototype,proto$0);proto$0=void 0;return ClientSync;})(Client
 
 module.exports = ClientSync;
 
-},{"./ClientModule":9,"./client":15,"sync/client":63,"waves-audio":85}],15:[function(require,module,exports){
+},{"./ClientModule":12,"./client":20,"sync/client":74,"waves-audio":98}],20:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
  */
-"use strict";var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;var SLICE$0 = Array.prototype.slice;var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function GET_ITER$0(v){if(v){if(Array.isArray(v))return 0;var f;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){if(S_MARK$0)S_MARK$0(void 0);return f.call(v);}if(S_MARK$0)S_MARK$0(void 0);if((v+'')==='[object Generator]')return v;}throw new Error(v+' is not iterable')};
+"use strict";var SLICE$0 = Array.prototype.slice;var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function ITER$0(v,f){if(v){if(Array.isArray(v))return f?v.slice():v;var i,r;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){i=f.call(v);r=[];}else if((v+'')==='[object Generator]'){i=v;r=[];};if(S_MARK$0)S_MARK$0(void 0);if(r) {while((f=i['next']()),f['done']!==true)r.push(f['value']);return r;}}throw new Error(v+' is not iterable')};
+
+var MobileDetect = require('mobile-detect');
+var ClientModule = require('./ClientModule');
+
+// debug - http://socket.io/docs/logging-and-debugging/#available-debugging-scopes
+// localStorage.debug = '*';
 
 var client = {
-  tyoe: null,
-  index: 0,
+  type: null,
+  ready: null,
+  index: -1,
   coordinates: null,
   init: init,
   start: start,
+
+  // deprecated functions
+  serial: serial,
+  parallel: parallel,
+
+  io: null,
   socket: null,
   send: send,
   receive: receive,
-  serial: serial,
-  parallel: parallel
+  removeListener: removeListener,
+  platform: {
+    os: null,
+    isMobile: null,
+    audioFileExt: '',
+    isForbidden: false
+  }
 };
 
-var EventEmitter = require('events').EventEmitter;
-var ClientModule = require('./ClientModule');
-var io = require('socket.io-client');
+// get informations about client
+var ua = window.navigator.userAgent
+var md = new MobileDetect(ua);
+client.platform.isMobile = (md.mobile() !== null); // true if phone or tablet
+client.platform.os = (function()  {
+  var os = md.os();
 
-var ParallelModule = (function(super$0){if(!PRS$0)MIXIN$0(ParallelModule, super$0);var proto$0={};
-  function ParallelModule(modules) {
-    super$0.call(this, 'parallel', false);
-    this.modules = modules;
-    this.doneCount = 0;
-  }if(super$0!==null)SP$0(ParallelModule,super$0);ParallelModule.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":ParallelModule,"configurable":true,"writable":true}});DP$0(ParallelModule,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+  if (os === 'AndroidOS') {
+    return 'android';
+  } else if (os === 'iOS') {
+    return 'ios';
+  } else {
+    return 'other';
+  }
+})();
 
-  proto$0.start = function() {var $D$1;var $D$2;var $D$3;var $D$4;var this$0 = this;
-    super$0.prototype.start.call(this);
+// audio file extention
+var a = document.createElement('audio');
+// http://diveintohtml5.info/everything.html
+if (!!(a.canPlayType && a.canPlayType('audio/mpeg;'))) {
+  client.platform.audioFileExt = '.mp3';
+} else if (!!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"'))) {
+  client.platform.audioFileExt = '.ogg';
+} else {
+  client.platform.audioFileExt = '.wav';
+}
 
-    var zIndex = this.modules.length * 100;
+function init() {var clientType = arguments[0];if(clientType === void 0)clientType = 'player';var options = arguments[1];if(options === void 0)options = {};
+  client.type = clientType;
+  client.io = null;
 
-    // start all setups
-    $D$4 = (this.modules);$D$1 = GET_ITER$0($D$4);$D$3 = $D$1 === 0;$D$2 = ($D$3 ? $D$4.length : void 0);for (var mod ;$D$3 ? ($D$1 < $D$2) : !($D$2 = $D$1["next"]())["done"];){mod = ($D$3 ? $D$4[$D$1++] : $D$2["value"]);
-      mod.on('done', function()  {
-        this$0.doneCount++;
+  if (options.io !== false) {
+    var io = require('socket.io-client');
 
-        if (this$0.doneCount === this$0.modules.length)
-          this$0.done();
-      });
-
-      if (mod.view) {
-        mod.view.style.zIndex = zIndex;
-        zIndex -= 100;
-      }
-
-      mod.start();
-    };$D$1 = $D$2 = $D$3 = $D$4 = void 0;
-  };
-MIXIN$0(ParallelModule.prototype,proto$0);proto$0=void 0;return ParallelModule;})(ClientModule);
-
-var SerialModule = (function(super$0){if(!PRS$0)MIXIN$0(SerialModule, super$0);var proto$0={};
-  function SerialModule(modules) {
-    super$0.call(this, 'serial', false);
-    this.modules = modules;
-  }if(super$0!==null)SP$0(SerialModule,super$0);SerialModule.prototype = OC$0(super$0!==null?super$0.prototype:null,{"constructor":{"value":SerialModule,"configurable":true,"writable":true}});DP$0(SerialModule,"prototype",{"configurable":false,"enumerable":false,"writable":false});
-
-  proto$0.start = function() {var $D$5;var $D$6;var $D$7;var $D$8;var this$0 = this;
-    super$0.prototype.start.call(this);
-
-    var prevModule = null;
-
-    // start all module listeners
-    $D$8 = (this.modules);$D$5 = GET_ITER$0($D$8);$D$7 = $D$5 === 0;$D$6 = ($D$7 ? $D$8.length : void 0);for (var mod ;$D$7 ? ($D$5 < $D$6) : !($D$6 = $D$5["next"]())["done"];){mod = ($D$7 ? $D$8[$D$5++] : $D$6["value"]);(function(mod){
-      if (prevModule) {
-        prevModule.on('done', function()  {
-          mod.start();
-        });
-      }
-
-      prevModule = mod;
-    })(mod);};$D$5 = $D$6 = $D$7 = $D$8 = void 0;
-
-    // when last module of sequence is done, the sequence is done
-    prevModule.on('done', function()  {
-      this$0.done();
+    client.io = io;
+    client.socket = client.io('/' + clientType, {
+      transports: ['websocket']
     });
 
-    // start first module of the sequence
-    this.modules[0].start();
-  };
-MIXIN$0(SerialModule.prototype,proto$0);proto$0=void 0;return SerialModule;})(ClientModule);
-
-function init(clientTyppe) {
-  client.type = clientTyppe;
-  client.socket = io('/' + clientTyppe);
+    client.ready = new Promise(function(resolve)  {
+      client.receive('client:start', function(index)  {
+        client.index = index;
+        resolve();
+      });
+    });
+  }
 }
 
-function start(theModule) {
-  // client/server handshake: send "ready" to server ...
-  client.send('client:ready');
+function start(startFun) {
+  var module = startFun; // be compatible with previous version
 
-  // ... wait for server's "start" ("server ready") to start modules
-  client.receive('server:ready', function()  {
-    theModule.start();
-  });
+  if(typeof startFun === 'function')
+    module = startFun(ClientModule.sequential, ClientModule.parallel);
 
-  client.receive('disconnect', function()  {
-  });
-}
+  var promise = module.createPromise();
 
-function send(msg) {var $D$0;function ITER$0(v,f){if(v){if(Array.isArray(v))return f?v.slice():v;var i,r;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){i=f.call(v);r=[];}else if((v+'')==='[object Generator]'){i=v;r=[];};if(S_MARK$0)S_MARK$0(void 0);if(r) {while((f=i['next']()),f['done']!==true)r.push(f['value']);return r;}}throw new Error(v+' is not iterable')};var args = SLICE$0.call(arguments, 1);
-  ($D$0 = client.socket).emit.apply($D$0, [msg].concat(ITER$0(args)));
-;$D$0 = void 0}
+  if (client.io) {
+    client.ready
+      .then(function()  {return module.launch()});
 
-function receive(msg, callback) {
-  client.socket.on(msg, callback);
+    client.receive('disconnect', function()  {
+      // console.log('disconnect', client.index);
+    });
+
+    client.receive('reconnect', function()  {
+      // console.log('reconnect', client.index);
+    });
+  } else {
+    // no client i/o, no server
+    module.launch();
+  }
+
+  return promise;
 }
 
 function serial() {var modules = SLICE$0.call(arguments, 0);
-  return new SerialModule(modules);
+  console.log('The function "client.serial" is deprecated. Please use the new API instead.');
+  return ClientModule.sequential.apply(ClientModule, ITER$0(modules));
 }
 
 function parallel() {var modules = SLICE$0.call(arguments, 0);
-  return new ParallelModule(modules);
+  console.log('The function "client.parallel" is deprecated. Please use the new API instead.');
+  return ClientModule.parallel.apply(ClientModule, ITER$0(modules));
+}
+
+function send(msg) {var $D$0;var args = SLICE$0.call(arguments, 1);
+  if (client.socket)
+    ($D$0 = client.socket).emit.apply($D$0, [msg].concat(ITER$0(args)));
+;$D$0 = void 0}
+
+function receive(msg, callback) {
+  if (client.socket) {
+    client.socket.removeListener(msg, callback);
+    client.socket.on(msg, callback);
+  }
+}
+
+function removeListener(msg, callback) {
+  if (client.socket)
+    client.socket.removeListener(msg, callback);
 }
 
 module.exports = client;
-},{"./ClientModule":9,"events":1,"socket.io-client":19}],16:[function(require,module,exports){
+},{"./ClientModule":12,"mobile-detect":28,"socket.io-client":30}],21:[function(require,module,exports){
 /**
  * @fileoverview Soundworks client side exported modules
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
@@ -1822,18 +2899,23 @@ module.exports = {
   audioContext: require('waves-audio').audioContext,
   client: require('./client'),
   input: require('./input'),
+  Calibration: require('./ClientCalibration'),
   Checkin: require('./ClientCheckin'),
   Control: require('./ClientControl'),
   Dialog: require('./ClientDialog'),
+  Filelist: require('./ClientFilelist'),
   Loader: require('./ClientLoader'),
+  Locator: require('./ClientLocator'),
   Module: require('./ClientModule'),
   Orientation: require('./ClientOrientation'),
   Performance: require('./ClientPerformance'),
   Platform: require('./ClientPlatform'),
-  Setup: require('./ClientSetup'),
+  Selector: require('./ClientSelector'),
+  Setup: require('./ClientSetup'), // to be removed
+  Space: require('./ClientSpace'),
   Sync: require('./ClientSync')
 };
-},{"./ClientCheckin":5,"./ClientControl":6,"./ClientDialog":7,"./ClientLoader":8,"./ClientModule":9,"./ClientOrientation":10,"./ClientPerformance":11,"./ClientPlatform":12,"./ClientSetup":13,"./ClientSync":14,"./client":15,"./input":17,"waves-audio":85}],17:[function(require,module,exports){
+},{"./ClientCalibration":5,"./ClientCheckin":6,"./ClientControl":7,"./ClientDialog":8,"./ClientFilelist":9,"./ClientLoader":10,"./ClientLocator":11,"./ClientModule":12,"./ClientOrientation":13,"./ClientPerformance":14,"./ClientPlatform":15,"./ClientSelector":16,"./ClientSetup":17,"./ClientSpace":18,"./ClientSync":19,"./client":20,"./input":22,"waves-audio":98}],22:[function(require,module,exports){
 /**
  * @fileoverview Soundworks (client side) sensor input module (singleton)
  * @author Sebastien.Robaszkiewicz@ircam.fr, Norbert.Schnell@ircam.fr
@@ -1847,6 +2929,27 @@ var audioContext = require('waves-audio').audioContext;
 var InputModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;if(!PRS$0)MIXIN$0(InputModule, super$0);var proto$0={};
   function InputModule() {
     super$0.call(this);
+
+    this.motionData = {
+      timestamp: 0,
+      acceleration: 0,
+      accelerationIncludingGravity: 0,
+      rotationRate: 0,
+    };
+
+    this.touchData = {
+      timestamp: 0,
+      identifier: 0,
+      event: '',
+      coordinates: [0, 0]
+    };
+
+    this.orientationData = {
+      alpha: 0,
+      beta: 0,
+      gamma: 0,
+      timestamp: 0
+    };
 
     this.handleDeviceOrientationEvent = this.handleDeviceOrientationEvent.bind(this); // since .bind() creates a new function, we can't use it directly in the add/removeEventListener.
     this.handleDeviceMotionEvent = this.handleDeviceMotionEvent.bind(this);
@@ -1868,12 +2971,11 @@ var InputModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={
   };
 
   proto$0.handleDeviceMotionEvent = function(e) {
-    var motionData = {
-      "acceleration": e.acceleration,
-      "accelerationIncludingGravity": e.accelerationIncludingGravity,
-      "rotationRate": e.rotationRate,
-      "timestamp": audioContext.currentTime
-    };
+    var motionData = this.motionData;
+    motionData.timestamp = audioContext.currentTime;
+    motionData.acceleration = e.acceleration;
+    motionData.accelerationIncludingGravity = e.accelerationIncludingGravity;
+    motionData.rotationRate = e.rotationRate;
 
     this.emit('devicemotion', motionData);
   };
@@ -1893,12 +2995,11 @@ var InputModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={
   };
 
   proto$0.handleDeviceOrientationEvent = function(e) {
-    var orientationData = {
-      "alpha": e.alpha,
-      "beta": e.beta,
-      "gamma": e.gamma,
-      "timestamp": audioContext.currentTime
-    };
+    var orientationData = this.orientationData;
+    orientationData.timestamp = audioContext.currentTime;
+    orientationData.alpha = e.alpha;
+    orientationData.beta = e.beta;
+    orientationData.gamma = e.gamma;
 
     this.emit('deviceorientation', orientationData);
   };
@@ -1910,12 +3011,14 @@ var InputModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={
    **/
 
   proto$0.enableTouch = function(surface) {
+    surface.addEventListener('touchcancel', this.handleTouchEvent, false);
     surface.addEventListener('touchend', this.handleTouchEvent, false);
     surface.addEventListener('touchmove', this.handleTouchEvent, false);
     surface.addEventListener('touchstart', this.handleTouchEvent, false);
   };
 
   proto$0.disableTouch = function(surface) {
+    surface.removeEventListener('touchcancel', this.handleTouchEvent, false);
     surface.removeEventListener('touchend', this.handleTouchEvent, false);
     surface.removeEventListener('touchmove', this.handleTouchEvent, false);
     surface.removeEventListener('touchstart', this.handleTouchEvent, false);
@@ -1925,19 +3028,1471 @@ var InputModule = (function(super$0){var PRS$0 = (function(o,t){o["__proto__"]={
     e.preventDefault(); // To prevent scrolling.
 
     for (var i = 0; i < e.changedTouches.length; i++) {
-      var touchData = {
-        "event": e.type,
-        "timestamp": audioContext.currentTime,
-        "coordinates": [e.changedTouches[i].clientX, e.changedTouches[i].clientY]
-      };
+      var type = e.type;
 
-      this.emit(e.type, touchData);
+      if (type === 'touchcancel')
+        type = 'touchend';
+
+      var touchData = this.touchData;
+      touchData.timestamp = audioContext.currentTime;
+      touchData.identifier = e.changedTouches[i].identifier;
+      touchData.event = type;
+      touchData.coordinates[0] = e.changedTouches[i].clientX;
+      touchData.coordinates[1] = e.changedTouches[i].clientY;
+
+      this.emit(type, touchData);
     }
   };
 MIXIN$0(InputModule.prototype,proto$0);proto$0=void 0;return InputModule;})(EventEmitter);
 
 module.exports = new InputModule();
-},{"events":1,"waves-audio":85}],18:[function(require,module,exports){
+},{"events":1,"waves-audio":98}],23:[function(require,module,exports){
+/**
+ * @fileOverview Client-side calibration component
+ * @author Jean-Philippe.Lambert@ircam.fr
+ */
+
+'use strict';
+
+var debug = require('debug')('soundworks:client:calibration');
+var platform = require('platform');
+
+// calibration~calibration type definition
+var calibrationType = require('../common/calibration');
+
+var CalibrationClient = (function(){var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var proto$0={};
+   /**
+   * @callback CalibrationClient~sendFunction
+   * @see {@linkcode CalibrationServer~receiveFunction}
+   * @param {String} messageType identification of ping message type
+   * @param {Object} params
+   **/
+
+  /**
+   * @callback CalibrationClient~receiveFunction
+   * @see {@linkcode CalibrationServer~sendFunction}
+   * @param {String} messageType identification of pong message type
+   * @param {SyncClient~receiveCallback} receiveCallback called on
+   * each message matching messageType.
+   **/
+
+  /**
+   * @callback CalibrationClient~receiveCallback
+   * @param {...Any} arguments
+   */
+
+  /**
+   * Function called when an update happened.
+   *
+   * See {@linkcode ClientCalibration~load}.
+   *
+   * @callback ClientCalibration~updateFunction
+   **/
+
+  /**
+   * This is the constructor. See {@linkcode CalibrationClient~save}
+   * and {@linkcode CalibrationClient~load}
+   *
+   * @constructs CalibrationClient
+   * @param {Object} [params]
+   * @param {Object} [params.localStorage]
+   * @param {Boolean} [params.localStorage.enabled=false] true to try to use
+   * local storage.
+   * @param {String} [params.localStorage.prefix='soundworks:calibration.']
+   * @param {ClientCalibration~updateFunction} [param.updateFunction]
+   */
+  function CalibrationClient() {var params = arguments[0];if(params === void 0)params = {};var this$0 = this;
+    this.sendFunction = params.sendFunction; // undefined is fine
+    this.receiveFunction = params.receiveFunction; // undefined is fine
+    this.updateFunction = params.updateFunction; // undefined is fine
+
+    this.localStorage = {};
+    this.localStorage.enabled = (typeof params.localStorage !== 'undefined'
+                                 && typeof params.localStorage.enabled !== 'undefined'
+                                 ? params.localStorage.enabled
+                                 : true);
+    // localStorage is requested
+    if(this.localStorage.enabled) {
+      this.localStorage.data = {};
+      this.localStorage.prefix = (typeof params.localStorage !== 'undefined'
+                                  && typeof params.localStorage.prefix !== 'undefined'
+                                  ? params.localStorage.prefix
+                                  : 'soundworks:calibration.');
+      this.localStorage.enabled = typeof window.localStorage !== 'undefined';
+      if(this.localStorage.enabled) {
+        try {
+          window.localStorage[this.localStorage.prefix + 'storage-enabled'] = true;
+          window.localStorage.removeItem(this.localStorage.prefix + 'storage-enabled');
+        } catch (error) {
+          // localStorage is not available
+          this.localStorage.enabled = false;
+        }
+      }
+
+      this.userAgent = platform.ua;
+
+      // calibrated attributes
+      this.audio = {};
+      this.network = {};
+    }
+
+    if(typeof this.receiveFunction !== 'undefined') {
+      this.receiveFunction('calibration:set', function(params)  {
+        this$0.set(params);
+      });
+    }
+  }DP$0(CalibrationClient,"prototype",{"configurable":false,"enumerable":false,"writable":false});
+
+  /**
+   * Get an identifier for making a request on the server.
+   *
+   * @see {@linkcode CalibrationServer~load}
+   *
+   * @function CalibrationClient~getId
+   * @returns {String} Identifier
+   */
+  proto$0.getId = function() {
+    return this.userAgent;
+  };
+
+  /**
+   * Get the calibrated values.
+   *
+   * @function CalibrationClient~get
+   * @returns {calibration} calibration
+   */
+  proto$0.get = function() {
+    return {
+      audio: this.audio,
+      network: this.network
+    };
+  };
+
+  /**
+   * Set calibration from given values.
+   *
+   * @function CalibrationClient~set
+   * @param {calibration} params
+   */
+  proto$0.set = function(params) {
+    if(typeof params !== 'undefined') {
+      if(typeof params.audio !== 'undefined') {
+        this.audio = params.audio;
+      }
+      if(typeof params.audio !== 'undefined') {
+        this.network = params.network;
+      }
+      if(typeof this.updateFunction !== 'undefined') {
+        this.updateFunction();
+      }
+    }
+  };
+
+  /**
+   * Store the current calibration locally, if localStorage is
+   * enabled, and on the server.
+   *
+   * See {@linkcode CalibrationClient~set} to change the current calibration.
+   *
+   * @function CalibrationClient~save
+   */
+  proto$0.save = function() {
+    var params = {
+      audio: this.audio,
+      network: this.network
+    };
+    if(this.localStorage.enabled) {
+      try {
+        for(var c in params) {
+          if(params.hasOwnProperty(c) ) {
+            window.localStorage[this.localStorage.prefix + c]
+              = JSON.stringify(params[c]);
+          }
+        }
+      } catch (error) {
+        console.log(error.message);
+        this.localStorage.enabled = false;
+      }
+    }
+
+    this.sendFunction('calibration:save', {
+      id: this.getId(),
+      calibration: this.get()
+    });
+  };
+
+  /**
+   * Load and set calibration values from local storage, if enabled
+   * and available, or from server.
+   *
+   * It will then call the update function if defined by the
+   * constructor. Note that loading from the server is asynchronous.
+   *
+   * @function CalibrationClient~load
+   * @returns {calibration} or {} if no calibration is available
+   */
+  proto$0.load = function() {var S_ITER$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol.iterator||'@@iterator';var S_MARK$0 = typeof Symbol!=='undefined'&&Symbol&&Symbol["__setObjectSetter__"];function GET_ITER$0(v){if(v){if(Array.isArray(v))return 0;var f;if(S_MARK$0)S_MARK$0(v);if(typeof v==='object'&&typeof (f=v[S_ITER$0])==='function'){if(S_MARK$0)S_MARK$0(void 0);return f.call(v);}if(S_MARK$0)S_MARK$0(void 0);if((v+'')==='[object Generator]')return v;}throw new Error(v+' is not iterable')};var $D$0;var $D$1;var $D$2;
+    var calibration = {};
+    if(this.localStorage.enabled) {
+      var keys = ['audio', 'network'];
+      $D$0 = GET_ITER$0(keys);$D$2 = $D$0 === 0;$D$1 = ($D$2 ? keys.length : void 0);for(var k ;$D$2 ? ($D$0 < $D$1) : !($D$1 = $D$0["next"]())["done"];){k = ($D$2 ? keys[$D$0++] : $D$1["value"]);
+        if(typeof window.localStorage[this.localStorage.prefix + k]
+           !== 'undefined') {
+          calibration[k] = JSON.parse(
+            window.localStorage[this.localStorage.prefix + k]);
+        }
+      };$D$0 = $D$1 = $D$2 = void 0;
+    }
+
+    if(calibration.hasOwnProperty('audio') ) {
+      this.set(calibration);
+    } else {
+      // restore from server
+      this.sendFunction('calibration:load', { id: this.getId() } );
+    }
+
+    return calibration;
+  };
+
+MIXIN$0(CalibrationClient.prototype,proto$0);proto$0=void 0;return CalibrationClient;})();
+
+module.exports = CalibrationClient;
+
+},{"../common/calibration":24,"debug":25,"platform":29}],24:[function(require,module,exports){
+/**
+ * @fileOverview calibration object definition
+ * @name calibration.es6.js
+ * @author Jean-Philippe.Lambert@ircam.fr
+ */
+
+'use strict';
+
+/**
+ * This object may not define all properties, like network
+ * statistics. In particular, it could be the empty object {} if no
+ * calibration is available.
+ *
+ * @typedef {Object} calibration
+ * @property {Object} audio
+ * @property {Number} audio.delay in seconds
+ * @property {Number} audio.gain in dB
+ * @property {Object} network
+ * @property {Number} network.delay in seconds
+ * @property {Number} network.delayMax in seconds
+ **/
+
+
+},{}],25:[function(require,module,exports){
+
+/**
+ * This is the web browser implementation of `debug()`.
+ *
+ * Expose `debug()` as the module.
+ */
+
+exports = module.exports = require('./debug');
+exports.log = log;
+exports.formatArgs = formatArgs;
+exports.save = save;
+exports.load = load;
+exports.useColors = useColors;
+exports.storage = 'undefined' != typeof chrome
+               && 'undefined' != typeof chrome.storage
+                  ? chrome.storage.local
+                  : localstorage();
+
+/**
+ * Colors.
+ */
+
+exports.colors = [
+  'lightseagreen',
+  'forestgreen',
+  'goldenrod',
+  'dodgerblue',
+  'darkorchid',
+  'crimson'
+];
+
+/**
+ * Currently only WebKit-based Web Inspectors, Firefox >= v31,
+ * and the Firebug extension (any Firefox version) are known
+ * to support "%c" CSS customizations.
+ *
+ * TODO: add a `localStorage` variable to explicitly enable/disable colors
+ */
+
+function useColors() {
+  // is webkit? http://stackoverflow.com/a/16459606/376773
+  return ('WebkitAppearance' in document.documentElement.style) ||
+    // is firebug? http://stackoverflow.com/a/398120/376773
+    (window.console && (console.firebug || (console.exception && console.table))) ||
+    // is firefox >= v31?
+    // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
+    (navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31);
+}
+
+/**
+ * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
+ */
+
+exports.formatters.j = function(v) {
+  return JSON.stringify(v);
+};
+
+
+/**
+ * Colorize log arguments if enabled.
+ *
+ * @api public
+ */
+
+function formatArgs() {
+  var args = arguments;
+  var useColors = this.useColors;
+
+  args[0] = (useColors ? '%c' : '')
+    + this.namespace
+    + (useColors ? ' %c' : ' ')
+    + args[0]
+    + (useColors ? '%c ' : ' ')
+    + '+' + exports.humanize(this.diff);
+
+  if (!useColors) return args;
+
+  var c = 'color: ' + this.color;
+  args = [args[0], c, 'color: inherit'].concat(Array.prototype.slice.call(args, 1));
+
+  // the final "%c" is somewhat tricky, because there could be other
+  // arguments passed either before or after the %c, so we need to
+  // figure out the correct index to insert the CSS into
+  var index = 0;
+  var lastC = 0;
+  args[0].replace(/%[a-z%]/g, function(match) {
+    if ('%%' === match) return;
+    index++;
+    if ('%c' === match) {
+      // we only are interested in the *last* %c
+      // (the user may have provided their own)
+      lastC = index;
+    }
+  });
+
+  args.splice(lastC, 0, c);
+  return args;
+}
+
+/**
+ * Invokes `console.log()` when available.
+ * No-op when `console.log` is not a "function".
+ *
+ * @api public
+ */
+
+function log() {
+  // this hackery is required for IE8/9, where
+  // the `console.log` function doesn't have 'apply'
+  return 'object' === typeof console
+    && console.log
+    && Function.prototype.apply.call(console.log, console, arguments);
+}
+
+/**
+ * Save `namespaces`.
+ *
+ * @param {String} namespaces
+ * @api private
+ */
+
+function save(namespaces) {
+  try {
+    if (null == namespaces) {
+      exports.storage.removeItem('debug');
+    } else {
+      exports.storage.debug = namespaces;
+    }
+  } catch(e) {}
+}
+
+/**
+ * Load `namespaces`.
+ *
+ * @return {String} returns the previously persisted debug modes
+ * @api private
+ */
+
+function load() {
+  var r;
+  try {
+    r = exports.storage.debug;
+  } catch(e) {}
+  return r;
+}
+
+/**
+ * Enable namespaces listed in `localStorage.debug` initially.
+ */
+
+exports.enable(load());
+
+/**
+ * Localstorage attempts to return the localstorage.
+ *
+ * This is necessary because safari throws
+ * when a user disables cookies/localstorage
+ * and you attempt to access it.
+ *
+ * @return {LocalStorage}
+ * @api private
+ */
+
+function localstorage(){
+  try {
+    return window.localStorage;
+  } catch (e) {}
+}
+
+},{"./debug":26}],26:[function(require,module,exports){
+arguments[4][3][0].apply(exports,arguments)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/debug/debug.js":3,"ms":27}],27:[function(require,module,exports){
+/**
+ * Helpers.
+ */
+
+var s = 1000;
+var m = s * 60;
+var h = m * 60;
+var d = h * 24;
+var y = d * 365.25;
+
+/**
+ * Parse or format the given `val`.
+ *
+ * Options:
+ *
+ *  - `long` verbose formatting [false]
+ *
+ * @param {String|Number} val
+ * @param {Object} options
+ * @return {String|Number}
+ * @api public
+ */
+
+module.exports = function(val, options){
+  options = options || {};
+  if ('string' == typeof val) return parse(val);
+  return options.long
+    ? long(val)
+    : short(val);
+};
+
+/**
+ * Parse the given `str` and return milliseconds.
+ *
+ * @param {String} str
+ * @return {Number}
+ * @api private
+ */
+
+function parse(str) {
+  str = '' + str;
+  if (str.length > 10000) return;
+  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str);
+  if (!match) return;
+  var n = parseFloat(match[1]);
+  var type = (match[2] || 'ms').toLowerCase();
+  switch (type) {
+    case 'years':
+    case 'year':
+    case 'yrs':
+    case 'yr':
+    case 'y':
+      return n * y;
+    case 'days':
+    case 'day':
+    case 'd':
+      return n * d;
+    case 'hours':
+    case 'hour':
+    case 'hrs':
+    case 'hr':
+    case 'h':
+      return n * h;
+    case 'minutes':
+    case 'minute':
+    case 'mins':
+    case 'min':
+    case 'm':
+      return n * m;
+    case 'seconds':
+    case 'second':
+    case 'secs':
+    case 'sec':
+    case 's':
+      return n * s;
+    case 'milliseconds':
+    case 'millisecond':
+    case 'msecs':
+    case 'msec':
+    case 'ms':
+      return n;
+  }
+}
+
+/**
+ * Short format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function short(ms) {
+  if (ms >= d) return Math.round(ms / d) + 'd';
+  if (ms >= h) return Math.round(ms / h) + 'h';
+  if (ms >= m) return Math.round(ms / m) + 'm';
+  if (ms >= s) return Math.round(ms / s) + 's';
+  return ms + 'ms';
+}
+
+/**
+ * Long format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function long(ms) {
+  return plural(ms, d, 'day')
+    || plural(ms, h, 'hour')
+    || plural(ms, m, 'minute')
+    || plural(ms, s, 'second')
+    || ms + ' ms';
+}
+
+/**
+ * Pluralization helper.
+ */
+
+function plural(ms, n, name) {
+  if (ms < n) return;
+  if (ms < n * 1.5) return Math.floor(ms / n) + ' ' + name;
+  return Math.ceil(ms / n) + ' ' + name + 's';
+}
+
+},{}],28:[function(require,module,exports){
+// THIS FILE IS GENERATED - DO NOT EDIT!
+/*global module:false, define:false*/
+
+(function (define, undefined) {
+define(function () {
+    'use strict';
+
+    var impl = {};
+
+    impl.mobileDetectRules = {
+    "phones": {
+        "iPhone": "\\biPhone\\b|\\biPod\\b",
+        "BlackBerry": "BlackBerry|\\bBB10\\b|rim[0-9]+",
+        "HTC": "HTC|HTC.*(Sensation|Evo|Vision|Explorer|6800|8100|8900|A7272|S510e|C110e|Legend|Desire|T8282)|APX515CKT|Qtek9090|APA9292KT|HD_mini|Sensation.*Z710e|PG86100|Z715e|Desire.*(A8181|HD)|ADR6200|ADR6400L|ADR6425|001HT|Inspire 4G|Android.*\\bEVO\\b|T-Mobile G1|Z520m",
+        "Nexus": "Nexus One|Nexus S|Galaxy.*Nexus|Android.*Nexus.*Mobile|Nexus 4|Nexus 5|Nexus 6",
+        "Dell": "Dell.*Streak|Dell.*Aero|Dell.*Venue|DELL.*Venue Pro|Dell Flash|Dell Smoke|Dell Mini 3iX|XCD28|XCD35|\\b001DL\\b|\\b101DL\\b|\\bGS01\\b",
+        "Motorola": "Motorola|DROIDX|DROID BIONIC|\\bDroid\\b.*Build|Android.*Xoom|HRI39|MOT-|A1260|A1680|A555|A853|A855|A953|A955|A956|Motorola.*ELECTRIFY|Motorola.*i1|i867|i940|MB200|MB300|MB501|MB502|MB508|MB511|MB520|MB525|MB526|MB611|MB612|MB632|MB810|MB855|MB860|MB861|MB865|MB870|ME501|ME502|ME511|ME525|ME600|ME632|ME722|ME811|ME860|ME863|ME865|MT620|MT710|MT716|MT720|MT810|MT870|MT917|Motorola.*TITANIUM|WX435|WX445|XT300|XT301|XT311|XT316|XT317|XT319|XT320|XT390|XT502|XT530|XT531|XT532|XT535|XT603|XT610|XT611|XT615|XT681|XT701|XT702|XT711|XT720|XT800|XT806|XT860|XT862|XT875|XT882|XT883|XT894|XT901|XT907|XT909|XT910|XT912|XT928|XT926|XT915|XT919|XT925",
+        "Samsung": "Samsung|SGH-I337|BGT-S5230|GT-B2100|GT-B2700|GT-B2710|GT-B3210|GT-B3310|GT-B3410|GT-B3730|GT-B3740|GT-B5510|GT-B5512|GT-B5722|GT-B6520|GT-B7300|GT-B7320|GT-B7330|GT-B7350|GT-B7510|GT-B7722|GT-B7800|GT-C3010|GT-C3011|GT-C3060|GT-C3200|GT-C3212|GT-C3212I|GT-C3262|GT-C3222|GT-C3300|GT-C3300K|GT-C3303|GT-C3303K|GT-C3310|GT-C3322|GT-C3330|GT-C3350|GT-C3500|GT-C3510|GT-C3530|GT-C3630|GT-C3780|GT-C5010|GT-C5212|GT-C6620|GT-C6625|GT-C6712|GT-E1050|GT-E1070|GT-E1075|GT-E1080|GT-E1081|GT-E1085|GT-E1087|GT-E1100|GT-E1107|GT-E1110|GT-E1120|GT-E1125|GT-E1130|GT-E1160|GT-E1170|GT-E1175|GT-E1180|GT-E1182|GT-E1200|GT-E1210|GT-E1225|GT-E1230|GT-E1390|GT-E2100|GT-E2120|GT-E2121|GT-E2152|GT-E2220|GT-E2222|GT-E2230|GT-E2232|GT-E2250|GT-E2370|GT-E2550|GT-E2652|GT-E3210|GT-E3213|GT-I5500|GT-I5503|GT-I5700|GT-I5800|GT-I5801|GT-I6410|GT-I6420|GT-I7110|GT-I7410|GT-I7500|GT-I8000|GT-I8150|GT-I8160|GT-I8190|GT-I8320|GT-I8330|GT-I8350|GT-I8530|GT-I8700|GT-I8703|GT-I8910|GT-I9000|GT-I9001|GT-I9003|GT-I9010|GT-I9020|GT-I9023|GT-I9070|GT-I9082|GT-I9100|GT-I9103|GT-I9220|GT-I9250|GT-I9300|GT-I9305|GT-I9500|GT-I9505|GT-M3510|GT-M5650|GT-M7500|GT-M7600|GT-M7603|GT-M8800|GT-M8910|GT-N7000|GT-S3110|GT-S3310|GT-S3350|GT-S3353|GT-S3370|GT-S3650|GT-S3653|GT-S3770|GT-S3850|GT-S5210|GT-S5220|GT-S5229|GT-S5230|GT-S5233|GT-S5250|GT-S5253|GT-S5260|GT-S5263|GT-S5270|GT-S5300|GT-S5330|GT-S5350|GT-S5360|GT-S5363|GT-S5369|GT-S5380|GT-S5380D|GT-S5560|GT-S5570|GT-S5600|GT-S5603|GT-S5610|GT-S5620|GT-S5660|GT-S5670|GT-S5690|GT-S5750|GT-S5780|GT-S5830|GT-S5839|GT-S6102|GT-S6500|GT-S7070|GT-S7200|GT-S7220|GT-S7230|GT-S7233|GT-S7250|GT-S7500|GT-S7530|GT-S7550|GT-S7562|GT-S7710|GT-S8000|GT-S8003|GT-S8500|GT-S8530|GT-S8600|SCH-A310|SCH-A530|SCH-A570|SCH-A610|SCH-A630|SCH-A650|SCH-A790|SCH-A795|SCH-A850|SCH-A870|SCH-A890|SCH-A930|SCH-A950|SCH-A970|SCH-A990|SCH-I100|SCH-I110|SCH-I400|SCH-I405|SCH-I500|SCH-I510|SCH-I515|SCH-I600|SCH-I730|SCH-I760|SCH-I770|SCH-I830|SCH-I910|SCH-I920|SCH-I959|SCH-LC11|SCH-N150|SCH-N300|SCH-R100|SCH-R300|SCH-R351|SCH-R400|SCH-R410|SCH-T300|SCH-U310|SCH-U320|SCH-U350|SCH-U360|SCH-U365|SCH-U370|SCH-U380|SCH-U410|SCH-U430|SCH-U450|SCH-U460|SCH-U470|SCH-U490|SCH-U540|SCH-U550|SCH-U620|SCH-U640|SCH-U650|SCH-U660|SCH-U700|SCH-U740|SCH-U750|SCH-U810|SCH-U820|SCH-U900|SCH-U940|SCH-U960|SCS-26UC|SGH-A107|SGH-A117|SGH-A127|SGH-A137|SGH-A157|SGH-A167|SGH-A177|SGH-A187|SGH-A197|SGH-A227|SGH-A237|SGH-A257|SGH-A437|SGH-A517|SGH-A597|SGH-A637|SGH-A657|SGH-A667|SGH-A687|SGH-A697|SGH-A707|SGH-A717|SGH-A727|SGH-A737|SGH-A747|SGH-A767|SGH-A777|SGH-A797|SGH-A817|SGH-A827|SGH-A837|SGH-A847|SGH-A867|SGH-A877|SGH-A887|SGH-A897|SGH-A927|SGH-B100|SGH-B130|SGH-B200|SGH-B220|SGH-C100|SGH-C110|SGH-C120|SGH-C130|SGH-C140|SGH-C160|SGH-C170|SGH-C180|SGH-C200|SGH-C207|SGH-C210|SGH-C225|SGH-C230|SGH-C417|SGH-C450|SGH-D307|SGH-D347|SGH-D357|SGH-D407|SGH-D415|SGH-D780|SGH-D807|SGH-D980|SGH-E105|SGH-E200|SGH-E315|SGH-E316|SGH-E317|SGH-E335|SGH-E590|SGH-E635|SGH-E715|SGH-E890|SGH-F300|SGH-F480|SGH-I200|SGH-I300|SGH-I320|SGH-I550|SGH-I577|SGH-I600|SGH-I607|SGH-I617|SGH-I627|SGH-I637|SGH-I677|SGH-I700|SGH-I717|SGH-I727|SGH-i747M|SGH-I777|SGH-I780|SGH-I827|SGH-I847|SGH-I857|SGH-I896|SGH-I897|SGH-I900|SGH-I907|SGH-I917|SGH-I927|SGH-I937|SGH-I997|SGH-J150|SGH-J200|SGH-L170|SGH-L700|SGH-M110|SGH-M150|SGH-M200|SGH-N105|SGH-N500|SGH-N600|SGH-N620|SGH-N625|SGH-N700|SGH-N710|SGH-P107|SGH-P207|SGH-P300|SGH-P310|SGH-P520|SGH-P735|SGH-P777|SGH-Q105|SGH-R210|SGH-R220|SGH-R225|SGH-S105|SGH-S307|SGH-T109|SGH-T119|SGH-T139|SGH-T209|SGH-T219|SGH-T229|SGH-T239|SGH-T249|SGH-T259|SGH-T309|SGH-T319|SGH-T329|SGH-T339|SGH-T349|SGH-T359|SGH-T369|SGH-T379|SGH-T409|SGH-T429|SGH-T439|SGH-T459|SGH-T469|SGH-T479|SGH-T499|SGH-T509|SGH-T519|SGH-T539|SGH-T559|SGH-T589|SGH-T609|SGH-T619|SGH-T629|SGH-T639|SGH-T659|SGH-T669|SGH-T679|SGH-T709|SGH-T719|SGH-T729|SGH-T739|SGH-T746|SGH-T749|SGH-T759|SGH-T769|SGH-T809|SGH-T819|SGH-T839|SGH-T919|SGH-T929|SGH-T939|SGH-T959|SGH-T989|SGH-U100|SGH-U200|SGH-U800|SGH-V205|SGH-V206|SGH-X100|SGH-X105|SGH-X120|SGH-X140|SGH-X426|SGH-X427|SGH-X475|SGH-X495|SGH-X497|SGH-X507|SGH-X600|SGH-X610|SGH-X620|SGH-X630|SGH-X700|SGH-X820|SGH-X890|SGH-Z130|SGH-Z150|SGH-Z170|SGH-ZX10|SGH-ZX20|SHW-M110|SPH-A120|SPH-A400|SPH-A420|SPH-A460|SPH-A500|SPH-A560|SPH-A600|SPH-A620|SPH-A660|SPH-A700|SPH-A740|SPH-A760|SPH-A790|SPH-A800|SPH-A820|SPH-A840|SPH-A880|SPH-A900|SPH-A940|SPH-A960|SPH-D600|SPH-D700|SPH-D710|SPH-D720|SPH-I300|SPH-I325|SPH-I330|SPH-I350|SPH-I500|SPH-I600|SPH-I700|SPH-L700|SPH-M100|SPH-M220|SPH-M240|SPH-M300|SPH-M305|SPH-M320|SPH-M330|SPH-M350|SPH-M360|SPH-M370|SPH-M380|SPH-M510|SPH-M540|SPH-M550|SPH-M560|SPH-M570|SPH-M580|SPH-M610|SPH-M620|SPH-M630|SPH-M800|SPH-M810|SPH-M850|SPH-M900|SPH-M910|SPH-M920|SPH-M930|SPH-N100|SPH-N200|SPH-N240|SPH-N300|SPH-N400|SPH-Z400|SWC-E100|SCH-i909|GT-N7100|GT-N7105|SCH-I535|SM-N900A|SGH-I317|SGH-T999L|GT-S5360B|GT-I8262|GT-S6802|GT-S6312|GT-S6310|GT-S5312|GT-S5310|GT-I9105|GT-I8510|GT-S6790N|SM-G7105|SM-N9005|GT-S5301|GT-I9295|GT-I9195|SM-C101|GT-S7392|GT-S7560|GT-B7610|GT-I5510|GT-S7582|GT-S7530E|GT-I8750|SM-G9006V|SM-G9008V|SM-G9009D|SM-G900A|SM-G900D|SM-G900F|SM-G900H|SM-G900I|SM-G900J|SM-G900K|SM-G900L|SM-G900M|SM-G900P|SM-G900R4|SM-G900S|SM-G900T|SM-G900V|SM-G900W8|SHV-E160K",
+        "LG": "\\bLG\\b;|LG[- ]?(C800|C900|E400|E610|E900|E-900|F160|F180K|F180L|F180S|730|855|L160|LS740|LS840|LS970|LU6200|MS690|MS695|MS770|MS840|MS870|MS910|P500|P700|P705|VM696|AS680|AS695|AX840|C729|E970|GS505|272|C395|E739BK|E960|L55C|L75C|LS696|LS860|P769BK|P350|P500|P509|P870|UN272|US730|VS840|VS950|LN272|LN510|LS670|LS855|LW690|MN270|MN510|P509|P769|P930|UN200|UN270|UN510|UN610|US670|US740|US760|UX265|UX840|VN271|VN530|VS660|VS700|VS740|VS750|VS910|VS920|VS930|VX9200|VX11000|AX840A|LW770|P506|P925|P999|E612|D955|D802)",
+        "Sony": "SonyST|SonyLT|SonyEricsson|SonyEricssonLT15iv|LT18i|E10i|LT28h|LT26w|SonyEricssonMT27i|C5303|C6902|C6903|C6906|C6943|D2533",
+        "Asus": "Asus.*Galaxy|PadFone.*Mobile",
+        "Micromax": "Micromax.*\\b(A210|A92|A88|A72|A111|A110Q|A115|A116|A110|A90S|A26|A51|A35|A54|A25|A27|A89|A68|A65|A57|A90)\\b",
+        "Palm": "PalmSource|Palm",
+        "Vertu": "Vertu|Vertu.*Ltd|Vertu.*Ascent|Vertu.*Ayxta|Vertu.*Constellation(F|Quest)?|Vertu.*Monika|Vertu.*Signature",
+        "Pantech": "PANTECH|IM-A850S|IM-A840S|IM-A830L|IM-A830K|IM-A830S|IM-A820L|IM-A810K|IM-A810S|IM-A800S|IM-T100K|IM-A725L|IM-A780L|IM-A775C|IM-A770K|IM-A760S|IM-A750K|IM-A740S|IM-A730S|IM-A720L|IM-A710K|IM-A690L|IM-A690S|IM-A650S|IM-A630K|IM-A600S|VEGA PTL21|PT003|P8010|ADR910L|P6030|P6020|P9070|P4100|P9060|P5000|CDM8992|TXT8045|ADR8995|IS11PT|P2030|P6010|P8000|PT002|IS06|CDM8999|P9050|PT001|TXT8040|P2020|P9020|P2000|P7040|P7000|C790",
+        "Fly": "IQ230|IQ444|IQ450|IQ440|IQ442|IQ441|IQ245|IQ256|IQ236|IQ255|IQ235|IQ245|IQ275|IQ240|IQ285|IQ280|IQ270|IQ260|IQ250",
+        "Wiko": "KITE 4G|HIGHWAY|GETAWAY|STAIRWAY|DARKSIDE|DARKFULL|DARKNIGHT|DARKMOON|SLIDE|WAX 4G|RAINBOW|BLOOM|SUNSET|GOA|LENNY|BARRY|IGGY|OZZY|CINK FIVE|CINK PEAX|CINK PEAX 2|CINK SLIM|CINK SLIM 2|CINK +|CINK KING|CINK PEAX|CINK SLIM|SUBLIM",
+        "iMobile": "i-mobile (IQ|i-STYLE|idea|ZAA|Hitz)",
+        "SimValley": "\\b(SP-80|XT-930|SX-340|XT-930|SX-310|SP-360|SP60|SPT-800|SP-120|SPT-800|SP-140|SPX-5|SPX-8|SP-100|SPX-8|SPX-12)\\b",
+        "Wolfgang": "AT-B24D|AT-AS50HD|AT-AS40W|AT-AS55HD|AT-AS45q2|AT-B26D|AT-AS50Q",
+        "Alcatel": "Alcatel",
+        "Nintendo": "Nintendo 3DS",
+        "Amoi": "Amoi",
+        "INQ": "INQ",
+        "GenericPhone": "Tapatalk|PDA;|SAGEM|\\bmmp\\b|pocket|\\bpsp\\b|symbian|Smartphone|smartfon|treo|up.browser|up.link|vodafone|\\bwap\\b|nokia|Series40|Series60|S60|SonyEricsson|N900|MAUI.*WAP.*Browser"
+    },
+    "tablets": {
+        "iPad": "iPad|iPad.*Mobile",
+        "NexusTablet": "Android.*Nexus[\\s]+(7|9|10)|^.*Android.*Nexus(?:(?!Mobile).)*$",
+        "SamsungTablet": "SAMSUNG.*Tablet|Galaxy.*Tab|SC-01C|GT-P1000|GT-P1003|GT-P1010|GT-P3105|GT-P6210|GT-P6800|GT-P6810|GT-P7100|GT-P7300|GT-P7310|GT-P7500|GT-P7510|SCH-I800|SCH-I815|SCH-I905|SGH-I957|SGH-I987|SGH-T849|SGH-T859|SGH-T869|SPH-P100|GT-P3100|GT-P3108|GT-P3110|GT-P5100|GT-P5110|GT-P6200|GT-P7320|GT-P7511|GT-N8000|GT-P8510|SGH-I497|SPH-P500|SGH-T779|SCH-I705|SCH-I915|GT-N8013|GT-P3113|GT-P5113|GT-P8110|GT-N8010|GT-N8005|GT-N8020|GT-P1013|GT-P6201|GT-P7501|GT-N5100|GT-N5105|GT-N5110|SHV-E140K|SHV-E140L|SHV-E140S|SHV-E150S|SHV-E230K|SHV-E230L|SHV-E230S|SHW-M180K|SHW-M180L|SHW-M180S|SHW-M180W|SHW-M300W|SHW-M305W|SHW-M380K|SHW-M380S|SHW-M380W|SHW-M430W|SHW-M480K|SHW-M480S|SHW-M480W|SHW-M485W|SHW-M486W|SHW-M500W|GT-I9228|SCH-P739|SCH-I925|GT-I9200|GT-I9205|GT-P5200|GT-P5210|GT-P5210X|SM-T311|SM-T310|SM-T310X|SM-T210|SM-T210R|SM-T211|SM-P600|SM-P601|SM-P605|SM-P900|SM-P901|SM-T217|SM-T217A|SM-T217S|SM-P6000|SM-T3100|SGH-I467|XE500|SM-T110|GT-P5220|GT-I9200X|GT-N5110X|GT-N5120|SM-P905|SM-T111|SM-T2105|SM-T315|SM-T320|SM-T320X|SM-T321|SM-T520|SM-T525|SM-T530NU|SM-T230NU|SM-T330NU|SM-T900|XE500T1C|SM-P605V|SM-P905V|SM-T337V|SM-T537V|SM-T707V|SM-T807V|SM-P600X|SM-P900X|SM-T210X|SM-T230|SM-T230X|SM-T325|GT-P7503|SM-T531|SM-T330|SM-T530|SM-T705C|SM-T535|SM-T331|SM-T800|SM-T700|SM-T537|SM-T807|SM-P907A|SM-T337A|SM-T537A|SM-T707A|SM-T807A|SM-T237P|SM-T807P|SM-P607T|SM-T217T|SM-T337T|SM-T807T",
+        "Kindle": "Kindle|Silk.*Accelerated|Android.*\\b(KFOT|KFTT|KFJWI|KFJWA|KFOTE|KFSOWI|KFTHWI|KFTHWA|KFAPWI|KFAPWA|WFJWAE|KFSAWA|KFSAWI|KFASWI)\\b",
+        "SurfaceTablet": "Windows NT [0-9.]+; ARM;.*(Tablet|ARMBJS)",
+        "HPTablet": "HP Slate (7|8|10)|HP ElitePad 900|hp-tablet|EliteBook.*Touch|HP 8|Slate 21|HP SlateBook 10",
+        "AsusTablet": "^.*PadFone((?!Mobile).)*$|Transformer|TF101|TF101G|TF300T|TF300TG|TF300TL|TF700T|TF700KL|TF701T|TF810C|ME171|ME301T|ME302C|ME371MG|ME370T|ME372MG|ME172V|ME173X|ME400C|Slider SL101|\\bK00F\\b|\\bK00C\\b|\\bK00E\\b|\\bK00L\\b|TX201LA|ME176C|ME102A|\\bM80TA\\b|ME372CL|ME560CG|ME372CG|ME302KL",
+        "BlackBerryTablet": "PlayBook|RIM Tablet",
+        "HTCtablet": "HTC_Flyer_P512|HTC Flyer|HTC Jetstream|HTC-P715a|HTC EVO View 4G|PG41200|PG09410",
+        "MotorolaTablet": "xoom|sholest|MZ615|MZ605|MZ505|MZ601|MZ602|MZ603|MZ604|MZ606|MZ607|MZ608|MZ609|MZ615|MZ616|MZ617",
+        "NookTablet": "Android.*Nook|NookColor|nook browser|BNRV200|BNRV200A|BNTV250|BNTV250A|BNTV400|BNTV600|LogicPD Zoom2",
+        "AcerTablet": "Android.*; \\b(A100|A101|A110|A200|A210|A211|A500|A501|A510|A511|A700|A701|W500|W500P|W501|W501P|W510|W511|W700|G100|G100W|B1-A71|B1-710|B1-711|A1-810|A1-811|A1-830)\\b|W3-810|\\bA3-A10\\b|\\bA3-A11\\b",
+        "ToshibaTablet": "Android.*(AT100|AT105|AT200|AT205|AT270|AT275|AT300|AT305|AT1S5|AT500|AT570|AT700|AT830)|TOSHIBA.*FOLIO",
+        "LGTablet": "\\bL-06C|LG-V909|LG-V900|LG-V700|LG-V510|LG-V500|LG-V410|LG-V400|LG-VK810\\b",
+        "FujitsuTablet": "Android.*\\b(F-01D|F-02F|F-05E|F-10D|M532|Q572)\\b",
+        "PrestigioTablet": "PMP3170B|PMP3270B|PMP3470B|PMP7170B|PMP3370B|PMP3570C|PMP5870C|PMP3670B|PMP5570C|PMP5770D|PMP3970B|PMP3870C|PMP5580C|PMP5880D|PMP5780D|PMP5588C|PMP7280C|PMP7280C3G|PMP7280|PMP7880D|PMP5597D|PMP5597|PMP7100D|PER3464|PER3274|PER3574|PER3884|PER5274|PER5474|PMP5097CPRO|PMP5097|PMP7380D|PMP5297C|PMP5297C_QUAD",
+        "LenovoTablet": "Idea(Tab|Pad)( A1|A10| K1|)|ThinkPad([ ]+)?Tablet|Lenovo.*(S2109|S2110|S5000|S6000|K3011|A3000|A3500|A1000|A2107|A2109|A1107|A5500|A7600|B6000|B8000|B8080)(-|)(FL|F|HV|H|)",
+        "DellTablet": "Venue 11|Venue 8|Venue 7|Dell Streak 10|Dell Streak 7",
+        "YarvikTablet": "Android.*\\b(TAB210|TAB211|TAB224|TAB250|TAB260|TAB264|TAB310|TAB360|TAB364|TAB410|TAB411|TAB420|TAB424|TAB450|TAB460|TAB461|TAB464|TAB465|TAB467|TAB468|TAB07-100|TAB07-101|TAB07-150|TAB07-151|TAB07-152|TAB07-200|TAB07-201-3G|TAB07-210|TAB07-211|TAB07-212|TAB07-214|TAB07-220|TAB07-400|TAB07-485|TAB08-150|TAB08-200|TAB08-201-3G|TAB08-201-30|TAB09-100|TAB09-211|TAB09-410|TAB10-150|TAB10-201|TAB10-211|TAB10-400|TAB10-410|TAB13-201|TAB274EUK|TAB275EUK|TAB374EUK|TAB462EUK|TAB474EUK|TAB9-200)\\b",
+        "MedionTablet": "Android.*\\bOYO\\b|LIFE.*(P9212|P9514|P9516|S9512)|LIFETAB",
+        "ArnovaTablet": "AN10G2|AN7bG3|AN7fG3|AN8G3|AN8cG3|AN7G3|AN9G3|AN7dG3|AN7dG3ST|AN7dG3ChildPad|AN10bG3|AN10bG3DT|AN9G2",
+        "IntensoTablet": "INM8002KP|INM1010FP|INM805ND|Intenso Tab|TAB1004",
+        "IRUTablet": "M702pro",
+        "MegafonTablet": "MegaFon V9|\\bZTE V9\\b|Android.*\\bMT7A\\b",
+        "EbodaTablet": "E-Boda (Supreme|Impresspeed|Izzycomm|Essential)",
+        "AllViewTablet": "Allview.*(Viva|Alldro|City|Speed|All TV|Frenzy|Quasar|Shine|TX1|AX1|AX2)",
+        "ArchosTablet": "\\b(101G9|80G9|A101IT)\\b|Qilive 97R|Archos5|\\bARCHOS (70|79|80|90|97|101|FAMILYPAD|)(b|)(G10| Cobalt| TITANIUM(HD|)| Xenon| Neon|XSK| 2| XS 2| PLATINUM| CARBON|GAMEPAD)\\b",
+        "AinolTablet": "NOVO7|NOVO8|NOVO10|Novo7Aurora|Novo7Basic|NOVO7PALADIN|novo9-Spark",
+        "SonyTablet": "Sony.*Tablet|Xperia Tablet|Sony Tablet S|SO-03E|SGPT12|SGPT13|SGPT114|SGPT121|SGPT122|SGPT123|SGPT111|SGPT112|SGPT113|SGPT131|SGPT132|SGPT133|SGPT211|SGPT212|SGPT213|SGP311|SGP312|SGP321|EBRD1101|EBRD1102|EBRD1201|SGP351|SGP341|SGP511|SGP512|SGP521|SGP541|SGP551|SGP621|SGP612",
+        "PhilipsTablet": "\\b(PI2010|PI3000|PI3100|PI3105|PI3110|PI3205|PI3210|PI3900|PI4010|PI7000|PI7100)\\b",
+        "CubeTablet": "Android.*(K8GT|U9GT|U10GT|U16GT|U17GT|U18GT|U19GT|U20GT|U23GT|U30GT)|CUBE U8GT",
+        "CobyTablet": "MID1042|MID1045|MID1125|MID1126|MID7012|MID7014|MID7015|MID7034|MID7035|MID7036|MID7042|MID7048|MID7127|MID8042|MID8048|MID8127|MID9042|MID9740|MID9742|MID7022|MID7010",
+        "MIDTablet": "M9701|M9000|M9100|M806|M1052|M806|T703|MID701|MID713|MID710|MID727|MID760|MID830|MID728|MID933|MID125|MID810|MID732|MID120|MID930|MID800|MID731|MID900|MID100|MID820|MID735|MID980|MID130|MID833|MID737|MID960|MID135|MID860|MID736|MID140|MID930|MID835|MID733",
+        "MSITablet": "MSI \\b(Primo 73K|Primo 73L|Primo 81L|Primo 77|Primo 93|Primo 75|Primo 76|Primo 73|Primo 81|Primo 91|Primo 90|Enjoy 71|Enjoy 7|Enjoy 10)\\b",
+        "SMiTTablet": "Android.*(\\bMID\\b|MID-560|MTV-T1200|MTV-PND531|MTV-P1101|MTV-PND530)",
+        "RockChipTablet": "Android.*(RK2818|RK2808A|RK2918|RK3066)|RK2738|RK2808A",
+        "FlyTablet": "IQ310|Fly Vision",
+        "bqTablet": "(bq)?.*(Elcano|Curie|Edison|Maxwell|Kepler|Pascal|Tesla|Hypatia|Platon|Newton|Livingstone|Cervantes|Avant|Aquaris E10)|Maxwell.*Lite|Maxwell.*Plus",
+        "HuaweiTablet": "MediaPad|MediaPad 7 Youth|IDEOS S7|S7-201c|S7-202u|S7-101|S7-103|S7-104|S7-105|S7-106|S7-201|S7-Slim",
+        "NecTablet": "\\bN-06D|\\bN-08D",
+        "PantechTablet": "Pantech.*P4100",
+        "BronchoTablet": "Broncho.*(N701|N708|N802|a710)",
+        "VersusTablet": "TOUCHPAD.*[78910]|\\bTOUCHTAB\\b",
+        "ZyncTablet": "z1000|Z99 2G|z99|z930|z999|z990|z909|Z919|z900",
+        "PositivoTablet": "TB07STA|TB10STA|TB07FTA|TB10FTA",
+        "NabiTablet": "Android.*\\bNabi",
+        "KoboTablet": "Kobo Touch|\\bK080\\b|\\bVox\\b Build|\\bArc\\b Build",
+        "DanewTablet": "DSlide.*\\b(700|701R|702|703R|704|802|970|971|972|973|974|1010|1012)\\b",
+        "TexetTablet": "NaviPad|TB-772A|TM-7045|TM-7055|TM-9750|TM-7016|TM-7024|TM-7026|TM-7041|TM-7043|TM-7047|TM-8041|TM-9741|TM-9747|TM-9748|TM-9751|TM-7022|TM-7021|TM-7020|TM-7011|TM-7010|TM-7023|TM-7025|TM-7037W|TM-7038W|TM-7027W|TM-9720|TM-9725|TM-9737W|TM-1020|TM-9738W|TM-9740|TM-9743W|TB-807A|TB-771A|TB-727A|TB-725A|TB-719A|TB-823A|TB-805A|TB-723A|TB-715A|TB-707A|TB-705A|TB-709A|TB-711A|TB-890HD|TB-880HD|TB-790HD|TB-780HD|TB-770HD|TB-721HD|TB-710HD|TB-434HD|TB-860HD|TB-840HD|TB-760HD|TB-750HD|TB-740HD|TB-730HD|TB-722HD|TB-720HD|TB-700HD|TB-500HD|TB-470HD|TB-431HD|TB-430HD|TB-506|TB-504|TB-446|TB-436|TB-416|TB-146SE|TB-126SE",
+        "PlaystationTablet": "Playstation.*(Portable|Vita)",
+        "TrekstorTablet": "ST10416-1|VT10416-1|ST70408-1|ST702xx-1|ST702xx-2|ST80208|ST97216|ST70104-2|VT10416-2|ST10216-2A|SurfTab",
+        "PyleAudioTablet": "\\b(PTBL10CEU|PTBL10C|PTBL72BC|PTBL72BCEU|PTBL7CEU|PTBL7C|PTBL92BC|PTBL92BCEU|PTBL9CEU|PTBL9CUK|PTBL9C)\\b",
+        "AdvanTablet": "Android.* \\b(E3A|T3X|T5C|T5B|T3E|T3C|T3B|T1J|T1F|T2A|T1H|T1i|E1C|T1-E|T5-A|T4|E1-B|T2Ci|T1-B|T1-D|O1-A|E1-A|T1-A|T3A|T4i)\\b ",
+        "DanyTechTablet": "Genius Tab G3|Genius Tab S2|Genius Tab Q3|Genius Tab G4|Genius Tab Q4|Genius Tab G-II|Genius TAB GII|Genius TAB GIII|Genius Tab S1",
+        "GalapadTablet": "Android.*\\bG1\\b",
+        "MicromaxTablet": "Funbook|Micromax.*\\b(P250|P560|P360|P362|P600|P300|P350|P500|P275)\\b",
+        "KarbonnTablet": "Android.*\\b(A39|A37|A34|ST8|ST10|ST7|Smart Tab3|Smart Tab2)\\b",
+        "AllFineTablet": "Fine7 Genius|Fine7 Shine|Fine7 Air|Fine8 Style|Fine9 More|Fine10 Joy|Fine11 Wide",
+        "PROSCANTablet": "\\b(PEM63|PLT1023G|PLT1041|PLT1044|PLT1044G|PLT1091|PLT4311|PLT4311PL|PLT4315|PLT7030|PLT7033|PLT7033D|PLT7035|PLT7035D|PLT7044K|PLT7045K|PLT7045KB|PLT7071KG|PLT7072|PLT7223G|PLT7225G|PLT7777G|PLT7810K|PLT7849G|PLT7851G|PLT7852G|PLT8015|PLT8031|PLT8034|PLT8036|PLT8080K|PLT8082|PLT8088|PLT8223G|PLT8234G|PLT8235G|PLT8816K|PLT9011|PLT9045K|PLT9233G|PLT9735|PLT9760G|PLT9770G)\\b",
+        "YONESTablet": "BQ1078|BC1003|BC1077|RK9702|BC9730|BC9001|IT9001|BC7008|BC7010|BC708|BC728|BC7012|BC7030|BC7027|BC7026",
+        "ChangJiaTablet": "TPC7102|TPC7103|TPC7105|TPC7106|TPC7107|TPC7201|TPC7203|TPC7205|TPC7210|TPC7708|TPC7709|TPC7712|TPC7110|TPC8101|TPC8103|TPC8105|TPC8106|TPC8203|TPC8205|TPC8503|TPC9106|TPC9701|TPC97101|TPC97103|TPC97105|TPC97106|TPC97111|TPC97113|TPC97203|TPC97603|TPC97809|TPC97205|TPC10101|TPC10103|TPC10106|TPC10111|TPC10203|TPC10205|TPC10503",
+        "GUTablet": "TX-A1301|TX-M9002|Q702|kf026",
+        "PointOfViewTablet": "TAB-P506|TAB-navi-7-3G-M|TAB-P517|TAB-P-527|TAB-P701|TAB-P703|TAB-P721|TAB-P731N|TAB-P741|TAB-P825|TAB-P905|TAB-P925|TAB-PR945|TAB-PL1015|TAB-P1025|TAB-PI1045|TAB-P1325|TAB-PROTAB[0-9]+|TAB-PROTAB25|TAB-PROTAB26|TAB-PROTAB27|TAB-PROTAB26XL|TAB-PROTAB2-IPS9|TAB-PROTAB30-IPS9|TAB-PROTAB25XXL|TAB-PROTAB26-IPS10|TAB-PROTAB30-IPS10",
+        "OvermaxTablet": "OV-(SteelCore|NewBase|Basecore|Baseone|Exellen|Quattor|EduTab|Solution|ACTION|BasicTab|TeddyTab|MagicTab|Stream|TB-08|TB-09)",
+        "HCLTablet": "HCL.*Tablet|Connect-3G-2.0|Connect-2G-2.0|ME Tablet U1|ME Tablet U2|ME Tablet G1|ME Tablet X1|ME Tablet Y2|ME Tablet Sync",
+        "DPSTablet": "DPS Dream 9|DPS Dual 7",
+        "VistureTablet": "V97 HD|i75 3G|Visture V4( HD)?|Visture V5( HD)?|Visture V10",
+        "CrestaTablet": "CTP(-)?810|CTP(-)?818|CTP(-)?828|CTP(-)?838|CTP(-)?888|CTP(-)?978|CTP(-)?980|CTP(-)?987|CTP(-)?988|CTP(-)?989",
+        "MediatekTablet": "\\bMT8125|MT8389|MT8135|MT8377\\b",
+        "ConcordeTablet": "Concorde([ ]+)?Tab|ConCorde ReadMan",
+        "GoCleverTablet": "GOCLEVER TAB|A7GOCLEVER|M1042|M7841|M742|R1042BK|R1041|TAB A975|TAB A7842|TAB A741|TAB A741L|TAB M723G|TAB M721|TAB A1021|TAB I921|TAB R721|TAB I720|TAB T76|TAB R70|TAB R76.2|TAB R106|TAB R83.2|TAB M813G|TAB I721|GCTA722|TAB I70|TAB I71|TAB S73|TAB R73|TAB R74|TAB R93|TAB R75|TAB R76.1|TAB A73|TAB A93|TAB A93.2|TAB T72|TAB R83|TAB R974|TAB R973|TAB A101|TAB A103|TAB A104|TAB A104.2|R105BK|M713G|A972BK|TAB A971|TAB R974.2|TAB R104|TAB R83.3|TAB A1042",
+        "ModecomTablet": "FreeTAB 9000|FreeTAB 7.4|FreeTAB 7004|FreeTAB 7800|FreeTAB 2096|FreeTAB 7.5|FreeTAB 1014|FreeTAB 1001 |FreeTAB 8001|FreeTAB 9706|FreeTAB 9702|FreeTAB 7003|FreeTAB 7002|FreeTAB 1002|FreeTAB 7801|FreeTAB 1331|FreeTAB 1004|FreeTAB 8002|FreeTAB 8014|FreeTAB 9704|FreeTAB 1003",
+        "VoninoTablet": "\\b(Argus[ _]?S|Diamond[ _]?79HD|Emerald[ _]?78E|Luna[ _]?70C|Onyx[ _]?S|Onyx[ _]?Z|Orin[ _]?HD|Orin[ _]?S|Otis[ _]?S|SpeedStar[ _]?S|Magnet[ _]?M9|Primus[ _]?94[ _]?3G|Primus[ _]?94HD|Primus[ _]?QS|Android.*\\bQ8\\b|Sirius[ _]?EVO[ _]?QS|Sirius[ _]?QS|Spirit[ _]?S)\\b",
+        "ECSTablet": "V07OT2|TM105A|S10OT1|TR10CS1",
+        "StorexTablet": "eZee[_']?(Tab|Go)[0-9]+|TabLC7|Looney Tunes Tab",
+        "VodafoneTablet": "SmartTab([ ]+)?[0-9]+|SmartTabII10|SmartTabII7",
+        "EssentielBTablet": "Smart[ ']?TAB[ ]+?[0-9]+|Family[ ']?TAB2",
+        "RossMoorTablet": "RM-790|RM-997|RMD-878G|RMD-974R|RMT-705A|RMT-701|RME-601|RMT-501|RMT-711",
+        "iMobileTablet": "i-mobile i-note",
+        "TolinoTablet": "tolino tab [0-9.]+|tolino shine",
+        "AudioSonicTablet": "\\bC-22Q|T7-QC|T-17B|T-17P\\b",
+        "AMPETablet": "Android.* A78 ",
+        "SkkTablet": "Android.* (SKYPAD|PHOENIX|CYCLOPS)",
+        "TecnoTablet": "TECNO P9",
+        "JXDTablet": "Android.*\\b(F3000|A3300|JXD5000|JXD3000|JXD2000|JXD300B|JXD300|S5800|S7800|S602b|S5110b|S7300|S5300|S602|S603|S5100|S5110|S601|S7100a|P3000F|P3000s|P101|P200s|P1000m|P200m|P9100|P1000s|S6600b|S908|P1000|P300|S18|S6600|S9100)\\b",
+        "iJoyTablet": "Tablet (Spirit 7|Essentia|Galatea|Fusion|Onix 7|Landa|Titan|Scooby|Deox|Stella|Themis|Argon|Unique 7|Sygnus|Hexen|Finity 7|Cream|Cream X2|Jade|Neon 7|Neron 7|Kandy|Scape|Saphyr 7|Rebel|Biox|Rebel|Rebel 8GB|Myst|Draco 7|Myst|Tab7-004|Myst|Tadeo Jones|Tablet Boing|Arrow|Draco Dual Cam|Aurix|Mint|Amity|Revolution|Finity 9|Neon 9|T9w|Amity 4GB Dual Cam|Stone 4GB|Stone 8GB|Andromeda|Silken|X2|Andromeda II|Halley|Flame|Saphyr 9,7|Touch 8|Planet|Triton|Unique 10|Hexen 10|Memphis 4GB|Memphis 8GB|Onix 10)",
+        "FX2Tablet": "FX2 PAD7|FX2 PAD10",
+        "XoroTablet": "KidsPAD 701|PAD[ ]?712|PAD[ ]?714|PAD[ ]?716|PAD[ ]?717|PAD[ ]?718|PAD[ ]?720|PAD[ ]?721|PAD[ ]?722|PAD[ ]?790|PAD[ ]?792|PAD[ ]?900|PAD[ ]?9715D|PAD[ ]?9716DR|PAD[ ]?9718DR|PAD[ ]?9719QR|PAD[ ]?9720QR|TelePAD1030|Telepad1032|TelePAD730|TelePAD731|TelePAD732|TelePAD735Q|TelePAD830|TelePAD9730|TelePAD795|MegaPAD 1331|MegaPAD 1851|MegaPAD 2151",
+        "ViewsonicTablet": "ViewPad 10pi|ViewPad 10e|ViewPad 10s|ViewPad E72|ViewPad7|ViewPad E100|ViewPad 7e|ViewSonic VB733|VB100a",
+        "OdysTablet": "LOOX|XENO10|ODYS[ -](Space|EVO|Xpress|NOON)|\\bXELIO\\b|Xelio10Pro|XELIO7PHONETAB|XELIO10EXTREME|XELIOPT2|NEO_QUAD10",
+        "CaptivaTablet": "CAPTIVA PAD",
+        "IconbitTablet": "NetTAB|NT-3702|NT-3702S|NT-3702S|NT-3603P|NT-3603P|NT-0704S|NT-0704S|NT-3805C|NT-3805C|NT-0806C|NT-0806C|NT-0909T|NT-0909T|NT-0907S|NT-0907S|NT-0902S|NT-0902S",
+        "TeclastTablet": "T98 4G|\\bP80\\b|\\bX90HD\\b|X98 Air|X98 Air 3G|\\bX89\\b|P80 3G|\\bX80h\\b|P98 Air|\\bX89HD\\b|P98 3G|\\bP90HD\\b|P89 3G|X98 3G|\\bP70h\\b|P79HD 3G|G18d 3G|\\bP79HD\\b|\\bP89s\\b|\\bA88\\b|\\bP10HD\\b|\\bP19HD\\b|G18 3G|\\bP78HD\\b|\\bA78\\b|\\bP75\\b|G17s 3G|G17h 3G|\\bP85t\\b|\\bP90\\b|\\bP11\\b|\\bP98t\\b|\\bP98HD\\b|\\bG18d\\b|\\bP85s\\b|\\bP11HD\\b|\\bP88s\\b|\\bA80HD\\b|\\bA80se\\b|\\bA10h\\b|\\bP89\\b|\\bP78s\\b|\\bG18\\b|\\bP85\\b|\\bA70h\\b|\\bA70\\b|\\bG17\\b|\\bP18\\b|\\bA80s\\b|\\bA11s\\b|\\bP88HD\\b|\\bA80h\\b|\\bP76s\\b|\\bP76h\\b|\\bP98\\b|\\bA10HD\\b|\\bP78\\b|\\bP88\\b|\\bA11\\b|\\bA10t\\b|\\bP76a\\b|\\bP76t\\b|\\bP76e\\b|\\bP85HD\\b|\\bP85a\\b|\\bP86\\b|\\bP75HD\\b|\\bP76v\\b|\\bA12\\b|\\bP75a\\b|\\bA15\\b|\\bP76Ti\\b|\\bP81HD\\b|\\bA10\\b|\\bT760VE\\b|\\bT720HD\\b|\\bP76\\b|\\bP73\\b|\\bP71\\b|\\bP72\\b|\\bT720SE\\b|\\bC520Ti\\b|\\bT760\\b|\\bT720VE\\b|T720-3GE|T720-WiFi",
+        "OndaTablet": "\\b(V975i|Vi30|VX530|V701|Vi60|V701s|Vi50|V801s|V719|Vx610w|VX610W|V819i|Vi10|VX580W|Vi10|V711s|V813|V811|V820w|V820|Vi20|V711|VI30W|V712|V891w|V972|V819w|V820w|Vi60|V820w|V711|V813s|V801|V819|V975s|V801|V819|V819|V818|V811|V712|V975m|V101w|V961w|V812|V818|V971|V971s|V919|V989|V116w|V102w|V973|Vi40)\\b[\\s]+",
+        "JaytechTablet": "TPC-PA762",
+        "BlaupunktTablet": "Endeavour 800NG|Endeavour 1010",
+        "DigmaTablet": "\\b(iDx10|iDx9|iDx8|iDx7|iDxD7|iDxD8|iDsQ8|iDsQ7|iDsQ8|iDsD10|iDnD7|3TS804H|iDsQ11|iDj7|iDs10)\\b",
+        "EvolioTablet": "ARIA_Mini_wifi|Aria[ _]Mini|Evolio X10|Evolio X7|Evolio X8|\\bEvotab\\b|\\bNeura\\b",
+        "LavaTablet": "QPAD E704|\\bIvoryS\\b|E-TAB IVORY",
+        "CelkonTablet": "CT695|CT888|CT[\\s]?910|CT7 Tab|CT9 Tab|CT3 Tab|CT2 Tab|CT1 Tab|C820|C720|\\bCT-1\\b",
+        "WolderTablet": "miTab \\b(DIAMOND|SPACE|BROOKLYN|NEO|FLY|MANHATTAN|FUNK|EVOLUTION|SKY|GOCAR|IRON|GENIUS|POP|MINT|EPSILON|BROADWAY|JUMP|HOP|LEGEND|NEW AGE|LINE|ADVANCE|FEEL|FOLLOW|LIKE|LINK|LIVE|THINK|FREEDOM|CHICAGO|CLEVELAND|BALTIMORE-GH|IOWA|BOSTON|SEATTLE|PHOENIX|DALLAS|IN 101|MasterChef)\\b",
+        "MiTablet": "\\bMI PAD\\b|\\bHM NOTE 1W\\b",
+        "NibiruTablet": "Nibiru M1|Nibiru Jupiter One",
+        "NexoTablet": "NEXO NOVA|NEXO 10|NEXO AVIO|NEXO FREE|NEXO GO|NEXO EVO|NEXO 3G|NEXO SMART|NEXO KIDDO|NEXO MOBI",
+        "UbislateTablet": "UbiSlate[\\s]?7C",
+        "PocketBookTablet": "Pocketbook",
+        "Hudl": "Hudl HT7S3",
+        "TelstraTablet": "T-Hub2",
+        "GenericTablet": "Android.*\\b97D\\b|Tablet(?!.*PC)|BNTV250A|MID-WCDMA|LogicPD Zoom2|\\bA7EB\\b|CatNova8|A1_07|CT704|CT1002|\\bM721\\b|rk30sdk|\\bEVOTAB\\b|M758A|ET904|ALUMIUM10|Smartfren Tab|Endeavour 1010|Tablet-PC-4|Tagi Tab|\\bM6pro\\b|CT1020W|arc 10HD|\\bJolla\\b"
+    },
+    "oss": {
+        "AndroidOS": "Android",
+        "BlackBerryOS": "blackberry|\\bBB10\\b|rim tablet os",
+        "PalmOS": "PalmOS|avantgo|blazer|elaine|hiptop|palm|plucker|xiino",
+        "SymbianOS": "Symbian|SymbOS|Series60|Series40|SYB-[0-9]+|\\bS60\\b",
+        "WindowsMobileOS": "Windows CE.*(PPC|Smartphone|Mobile|[0-9]{3}x[0-9]{3})|Window Mobile|Windows Phone [0-9.]+|WCE;",
+        "WindowsPhoneOS": "Windows Phone 8.1|Windows Phone 8.0|Windows Phone OS|XBLWP7|ZuneWP7|Windows NT 6.[23]; ARM;",
+        "iOS": "\\biPhone.*Mobile|\\biPod|\\biPad",
+        "MeeGoOS": "MeeGo",
+        "MaemoOS": "Maemo",
+        "JavaOS": "J2ME\/|\\bMIDP\\b|\\bCLDC\\b",
+        "webOS": "webOS|hpwOS",
+        "badaOS": "\\bBada\\b",
+        "BREWOS": "BREW"
+    },
+    "uas": {
+        "Chrome": "\\bCrMo\\b|CriOS|Android.*Chrome\/[.0-9]* (Mobile)?",
+        "Dolfin": "\\bDolfin\\b",
+        "Opera": "Opera.*Mini|Opera.*Mobi|Android.*Opera|Mobile.*OPR\/[0-9.]+|Coast\/[0-9.]+",
+        "Skyfire": "Skyfire",
+        "IE": "IEMobile|MSIEMobile",
+        "Firefox": "fennec|firefox.*maemo|(Mobile|Tablet).*Firefox|Firefox.*Mobile",
+        "Bolt": "bolt",
+        "TeaShark": "teashark",
+        "Blazer": "Blazer",
+        "Safari": "Version.*Mobile.*Safari|Safari.*Mobile|MobileSafari",
+        "Tizen": "Tizen",
+        "UCBrowser": "UC.*Browser|UCWEB",
+        "baiduboxapp": "baiduboxapp",
+        "baidubrowser": "baidubrowser",
+        "DiigoBrowser": "DiigoBrowser",
+        "Puffin": "Puffin",
+        "Mercury": "\\bMercury\\b",
+        "ObigoBrowser": "Obigo",
+        "NetFront": "NF-Browser",
+        "GenericBrowser": "NokiaBrowser|OviBrowser|OneBrowser|TwonkyBeamBrowser|SEMC.*Browser|FlyFlow|Minimo|NetFront|Novarra-Vision|MQQBrowser|MicroMessenger"
+    },
+    "props": {
+        "Mobile": "Mobile\/[VER]",
+        "Build": "Build\/[VER]",
+        "Version": "Version\/[VER]",
+        "VendorID": "VendorID\/[VER]",
+        "iPad": "iPad.*CPU[a-z ]+[VER]",
+        "iPhone": "iPhone.*CPU[a-z ]+[VER]",
+        "iPod": "iPod.*CPU[a-z ]+[VER]",
+        "Kindle": "Kindle\/[VER]",
+        "Chrome": [
+            "Chrome\/[VER]",
+            "CriOS\/[VER]",
+            "CrMo\/[VER]"
+        ],
+        "Coast": [
+            "Coast\/[VER]"
+        ],
+        "Dolfin": "Dolfin\/[VER]",
+        "Firefox": "Firefox\/[VER]",
+        "Fennec": "Fennec\/[VER]",
+        "IE": [
+            "IEMobile\/[VER];",
+            "IEMobile [VER]",
+            "MSIE [VER];",
+            "Trident\/[0-9.]+;.*rv:[VER]"
+        ],
+        "NetFront": "NetFront\/[VER]",
+        "NokiaBrowser": "NokiaBrowser\/[VER]",
+        "Opera": [
+            " OPR\/[VER]",
+            "Opera Mini\/[VER]",
+            "Version\/[VER]"
+        ],
+        "Opera Mini": "Opera Mini\/[VER]",
+        "Opera Mobi": "Version\/[VER]",
+        "UC Browser": "UC Browser[VER]",
+        "MQQBrowser": "MQQBrowser\/[VER]",
+        "MicroMessenger": "MicroMessenger\/[VER]",
+        "baiduboxapp": "baiduboxapp\/[VER]",
+        "baidubrowser": "baidubrowser\/[VER]",
+        "Iron": "Iron\/[VER]",
+        "Safari": [
+            "Version\/[VER]",
+            "Safari\/[VER]"
+        ],
+        "Skyfire": "Skyfire\/[VER]",
+        "Tizen": "Tizen\/[VER]",
+        "Webkit": "webkit[ \/][VER]",
+        "Gecko": "Gecko\/[VER]",
+        "Trident": "Trident\/[VER]",
+        "Presto": "Presto\/[VER]",
+        "iOS": " \\bi?OS\\b [VER][ ;]{1}",
+        "Android": "Android [VER]",
+        "BlackBerry": [
+            "BlackBerry[\\w]+\/[VER]",
+            "BlackBerry.*Version\/[VER]",
+            "Version\/[VER]"
+        ],
+        "BREW": "BREW [VER]",
+        "Java": "Java\/[VER]",
+        "Windows Phone OS": [
+            "Windows Phone OS [VER]",
+            "Windows Phone [VER]"
+        ],
+        "Windows Phone": "Windows Phone [VER]",
+        "Windows CE": "Windows CE\/[VER]",
+        "Windows NT": "Windows NT [VER]",
+        "Symbian": [
+            "SymbianOS\/[VER]",
+            "Symbian\/[VER]"
+        ],
+        "webOS": [
+            "webOS\/[VER]",
+            "hpwOS\/[VER];"
+        ]
+    },
+    "utils": {
+        "Bot": "Googlebot|facebookexternalhit|AdsBot-Google|Google Keyword Suggestion|Facebot|YandexBot|bingbot|ia_archiver|AhrefsBot|Ezooms|GSLFbot|WBSearchBot|Twitterbot|TweetmemeBot|Twikle|PaperLiBot|Wotbox|UnwindFetchor",
+        "MobileBot": "Googlebot-Mobile|AdsBot-Google-Mobile|YahooSeeker\/M1A1-R2D2",
+        "DesktopMode": "WPDesktop",
+        "TV": "SonyDTV|HbbTV",
+        "WebKit": "(webkit)[ \/]([\\w.]+)",
+        "Console": "\\b(Nintendo|Nintendo WiiU|Nintendo 3DS|PLAYSTATION|Xbox)\\b",
+        "Watch": "SM-V700"
+    }
+};
+
+    // following patterns come from http://detectmobilebrowsers.com/
+    impl.detectMobileBrowsers = {
+        fullPattern: /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i,
+        shortPattern: /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i,
+        tabletPattern: /android|ipad|playbook|silk/i
+    };
+
+    var hasOwnProp = Object.prototype.hasOwnProperty,
+        isArray;
+
+    impl.FALLBACK_PHONE = 'UnknownPhone';
+    impl.FALLBACK_TABLET = 'UnknownTablet';
+    impl.FALLBACK_MOBILE = 'UnknownMobile';
+
+    isArray = ('isArray' in Array) ?
+        Array.isArray : function (value) { return Object.prototype.toString.call(value) === '[object Array]'; };
+
+    function equalIC(a, b) {
+        return a != null && b != null && a.toLowerCase() === b.toLowerCase();
+    }
+
+    function convertPropsToRegExp(object) {
+        for (var key in object) {
+            if (hasOwnProp.call(object, key)) {
+                object[key] = new RegExp(object[key], 'i');
+            }
+        }
+    }
+
+    (function init() {
+        var key, values, value, i, len, verPos, mobileDetectRules = impl.mobileDetectRules;
+        for (key in mobileDetectRules.props) {
+            if (hasOwnProp.call(mobileDetectRules.props, key)) {
+                values = mobileDetectRules.props[key];
+                if (!isArray(values)) {
+                    values = [values];
+                }
+                len = values.length;
+                for (i = 0; i < len; ++i) {
+                    value = values[i];
+                    verPos = value.indexOf('[VER]');
+                    if (verPos >= 0) {
+                        value = value.substring(0, verPos) + '([\\w._\\+]+)' + value.substring(verPos + 5);
+                    }
+                    values[i] = new RegExp(value, 'i');
+                }
+                mobileDetectRules.props[key] = values;
+            }
+        }
+        convertPropsToRegExp(mobileDetectRules.oss);
+        convertPropsToRegExp(mobileDetectRules.phones);
+        convertPropsToRegExp(mobileDetectRules.tablets);
+        convertPropsToRegExp(mobileDetectRules.uas);
+        convertPropsToRegExp(mobileDetectRules.utils);
+
+        // copy some patterns to oss0 which are tested first (see issue#15)
+        mobileDetectRules.oss0 = {
+            WindowsPhoneOS: mobileDetectRules.oss.WindowsPhoneOS,
+            WindowsMobileOS: mobileDetectRules.oss.WindowsMobileOS
+        };
+    }());
+
+    /**
+     * Test userAgent string against a set of rules and find the matched key.
+     * @param {Object} rules (key is String, value is RegExp)
+     * @param {String} userAgent the navigator.userAgent (or HTTP-Header 'User-Agent').
+     * @returns {String|null} the matched key if found, otherwise <tt>null</tt>
+     * @private
+     */
+    impl.findMatch = function(rules, userAgent) {
+        for (var key in rules) {
+            if (hasOwnProp.call(rules, key)) {
+                if (rules[key].test(userAgent)) {
+                    return key;
+                }
+            }
+        }
+        return null;
+    };
+
+    /**
+     * Check the version of the given property in the User-Agent.
+     *
+     * @param {String} propertyName
+     * @param {String} userAgent
+     * @return {String} version or <tt>null</tt> if version not found
+     * @private
+     */
+    impl.getVersionStr = function (propertyName, userAgent) {
+        var props = impl.mobileDetectRules.props, patterns, i, len, match;
+        if (hasOwnProp.call(props, propertyName)) {
+            patterns = props[propertyName];
+            len = patterns.length;
+            for (i = 0; i < len; ++i) {
+                match = patterns[i].exec(userAgent);
+                if (match !== null) {
+                    return match[1];
+                }
+            }
+        }
+        return null;
+    };
+
+    /**
+     * Check the version of the given property in the User-Agent.
+     * Will return a float number. (eg. 2_0 will return 2.0, 4.3.1 will return 4.31)
+     *
+     * @param {String} propertyName
+     * @param {String} userAgent
+     * @return {Number} version or <tt>NaN</tt> if version not found
+     * @private
+     */
+    impl.getVersion = function (propertyName, userAgent) {
+        var version = impl.getVersionStr(propertyName, userAgent);
+        return version ? impl.prepareVersionNo(version) : NaN;
+    };
+
+    /**
+     * Prepare the version number.
+     *
+     * @param {String} version
+     * @return {Number} the version number as a floating number
+     * @private
+     */
+    impl.prepareVersionNo = function (version) {
+        var numbers;
+
+        numbers = version.split(/[a-z._ \/\-]/i);
+        if (numbers.length === 1) {
+            version = numbers[0];
+        }
+        if (numbers.length > 1) {
+            version = numbers[0] + '.';
+            numbers.shift();
+            version += numbers.join('');
+        }
+        return Number(version);
+    };
+
+    impl.isMobileFallback = function (userAgent) {
+        return impl.detectMobileBrowsers.fullPattern.test(userAgent) ||
+            impl.detectMobileBrowsers.shortPattern.test(userAgent.substr(0,4));
+    };
+
+    impl.isTabletFallback = function (userAgent) {
+        return impl.detectMobileBrowsers.tabletPattern.test(userAgent);
+    };
+
+    impl.prepareDetectionCache = function (cache, userAgent, maxPhoneWidth) {
+        if (cache.mobile !== undefined) {
+            return;
+        }
+        var phone, tablet, phoneSized;
+
+        // first check for stronger tablet rules, then phone (see issue#5)
+        tablet = impl.findMatch(impl.mobileDetectRules.tablets, userAgent);
+        if (tablet) {
+            cache.mobile = cache.tablet = tablet;
+            cache.phone = null;
+            return; // unambiguously identified as tablet
+        }
+
+        phone = impl.findMatch(impl.mobileDetectRules.phones, userAgent);
+        if (phone) {
+            cache.mobile = cache.phone = phone;
+            cache.tablet = null;
+            return; // unambiguously identified as phone
+        }
+
+        // our rules haven't found a match -> try more general fallback rules
+        if (impl.isMobileFallback(userAgent)) {
+            phoneSized = MobileDetect.isPhoneSized(maxPhoneWidth);
+            if (phoneSized === undefined) {
+                cache.mobile = impl.FALLBACK_MOBILE;
+                cache.tablet = cache.phone = null;
+            } else if (phoneSized) {
+                cache.mobile = cache.phone = impl.FALLBACK_PHONE;
+                cache.tablet = null;
+            } else {
+                cache.mobile = cache.tablet = impl.FALLBACK_TABLET;
+                cache.phone = null;
+            }
+        } else if (impl.isTabletFallback(userAgent)) {
+            cache.mobile = cache.tablet = impl.FALLBACK_TABLET;
+            cache.phone = null;
+        } else {
+            // not mobile at all!
+            cache.mobile = cache.tablet = cache.phone = null;
+        }
+    };
+
+    // t is a reference to a MobileDetect instance
+    impl.mobileGrade = function (t) {
+        // impl note:
+        // To keep in sync w/ Mobile_Detect.php easily, the following code is tightly aligned to the PHP version.
+        // When changes are made in Mobile_Detect.php, copy this method and replace:
+        //     $this-> / t.
+        //     self::MOBILE_GRADE_(.) / '$1'
+        //     , self::VERSION_TYPE_FLOAT / (nothing)
+        //     isIOS() / os('iOS')
+        //     [reg] / (nothing)   <-- jsdelivr complaining about unescaped unicode character U+00AE
+        var $isMobile = t.mobile() !== null;
+
+        if (
+            // Apple iOS 3.2-5.1 - Tested on the original iPad (4.3 / 5.0), iPad 2 (4.3), iPad 3 (5.1), original iPhone (3.1), iPhone 3 (3.2), 3GS (4.3), 4 (4.3 / 5.0), and 4S (5.1)
+            t.os('iOS') && t.version('iPad')>=4.3 ||
+            t.os('iOS') && t.version('iPhone')>=3.1 ||
+            t.os('iOS') && t.version('iPod')>=3.1 ||
+
+            // Android 2.1-2.3 - Tested on the HTC Incredible (2.2), original Droid (2.2), HTC Aria (2.1), Google Nexus S (2.3). Functional on 1.5 & 1.6 but performance may be sluggish, tested on Google G1 (1.5)
+            // Android 3.1 (Honeycomb)  - Tested on the Samsung Galaxy Tab 10.1 and Motorola XOOM
+            // Android 4.0 (ICS)  - Tested on a Galaxy Nexus. Note: transition performance can be poor on upgraded devices
+            // Android 4.1 (Jelly Bean)  - Tested on a Galaxy Nexus and Galaxy 7
+            ( t.version('Android')>2.1 && t.is('Webkit') ) ||
+
+            // Windows Phone 7-7.5 - Tested on the HTC Surround (7.0) HTC Trophy (7.5), LG-E900 (7.5), Nokia Lumia 800
+            t.version('Windows Phone OS')>=7.0 ||
+
+            // Blackberry 7 - Tested on BlackBerry Torch 9810
+            // Blackberry 6.0 - Tested on the Torch 9800 and Style 9670
+            t.is('BlackBerry') && t.version('BlackBerry')>=6.0 ||
+            // Blackberry Playbook (1.0-2.0) - Tested on PlayBook
+            t.match('Playbook.*Tablet') ||
+
+            // Palm WebOS (1.4-2.0) - Tested on the Palm Pixi (1.4), Pre (1.4), Pre 2 (2.0)
+            ( t.version('webOS')>=1.4 && t.match('Palm|Pre|Pixi') ) ||
+            // Palm WebOS 3.0  - Tested on HP TouchPad
+            t.match('hp.*TouchPad') ||
+
+            // Firefox Mobile (12 Beta) - Tested on Android 2.3 device
+            ( t.is('Firefox') && t.version('Firefox')>=12 ) ||
+
+            // Chrome for Android - Tested on Android 4.0, 4.1 device
+            ( t.is('Chrome') && t.is('AndroidOS') && t.version('Android')>=4.0 ) ||
+
+            // Skyfire 4.1 - Tested on Android 2.3 device
+            ( t.is('Skyfire') && t.version('Skyfire')>=4.1 && t.is('AndroidOS') && t.version('Android')>=2.3 ) ||
+
+            // Opera Mobile 11.5-12: Tested on Android 2.3
+            ( t.is('Opera') && t.version('Opera Mobi')>11 && t.is('AndroidOS') ) ||
+
+            // Meego 1.2 - Tested on Nokia 950 and N9
+            t.is('MeeGoOS') ||
+
+            // Tizen (pre-release) - Tested on early hardware
+            t.is('Tizen') ||
+
+            // Samsung Bada 2.0 - Tested on a Samsung Wave 3, Dolphin browser
+            // @todo: more tests here!
+            t.is('Dolfin') && t.version('Bada')>=2.0 ||
+
+            // UC Browser - Tested on Android 2.3 device
+            ( (t.is('UC Browser') || t.is('Dolfin')) && t.version('Android')>=2.3 ) ||
+
+            // Kindle 3 and Fire  - Tested on the built-in WebKit browser for each
+            ( t.match('Kindle Fire') ||
+                t.is('Kindle') && t.version('Kindle')>=3.0 ) ||
+
+            // Nook Color 1.4.1 - Tested on original Nook Color, not Nook Tablet
+            t.is('AndroidOS') && t.is('NookTablet') ||
+
+            // Chrome Desktop 11-21 - Tested on OS X 10.7 and Windows 7
+            t.version('Chrome')>=11 && !$isMobile ||
+
+            // Safari Desktop 4-5 - Tested on OS X 10.7 and Windows 7
+            t.version('Safari')>=5.0 && !$isMobile ||
+
+            // Firefox Desktop 4-13 - Tested on OS X 10.7 and Windows 7
+            t.version('Firefox')>=4.0 && !$isMobile ||
+
+            // Internet Explorer 7-9 - Tested on Windows XP, Vista and 7
+            t.version('MSIE')>=7.0 && !$isMobile ||
+
+            // Opera Desktop 10-12 - Tested on OS X 10.7 and Windows 7
+            // @reference: http://my.opera.com/community/openweb/idopera/
+            t.version('Opera')>=10 && !$isMobile
+
+            ){
+            return 'A';
+        }
+
+        if (
+            t.os('iOS') && t.version('iPad')<4.3 ||
+            t.os('iOS') && t.version('iPhone')<3.1 ||
+            t.os('iOS') && t.version('iPod')<3.1 ||
+
+            // Blackberry 5.0: Tested on the Storm 2 9550, Bold 9770
+            t.is('Blackberry') && t.version('BlackBerry')>=5 && t.version('BlackBerry')<6 ||
+
+            //Opera Mini (5.0-6.5) - Tested on iOS 3.2/4.3 and Android 2.3
+            ( t.version('Opera Mini')>=5.0 && t.version('Opera Mini')<=6.5 &&
+                (t.version('Android')>=2.3 || t.is('iOS')) ) ||
+
+            // Nokia Symbian^3 - Tested on Nokia N8 (Symbian^3), C7 (Symbian^3), also works on N97 (Symbian^1)
+            t.match('NokiaN8|NokiaC7|N97.*Series60|Symbian/3') ||
+
+            // @todo: report this (tested on Nokia N71)
+            t.version('Opera Mobi')>=11 && t.is('SymbianOS')
+            ){
+            return 'B';
+        }
+
+        if (
+        // Blackberry 4.x - Tested on the Curve 8330
+            t.version('BlackBerry')<5.0 ||
+            // Windows Mobile - Tested on the HTC Leo (WinMo 5.2)
+            t.match('MSIEMobile|Windows CE.*Mobile') || t.version('Windows Mobile')<=5.2
+
+            ){
+            return 'C';
+        }
+
+        //All older smartphone platforms and featurephones - Any device that doesn't support media queries
+        //will receive the basic, C grade experience.
+        return 'C';
+    };
+
+    impl.detectOS = function (ua) {
+        return impl.findMatch(impl.mobileDetectRules.oss0, ua) ||
+            impl.findMatch(impl.mobileDetectRules.oss, ua);
+    };
+
+    impl.getDeviceSmallerSide = function () {
+        return window.screen.width < window.screen.height ?
+            window.screen.width :
+            window.screen.height;
+    };
+
+    /**
+     * Constructor for MobileDetect object.
+     * <br>
+     * Such an object will keep a reference to the given user-agent string and cache most of the detect queries.<br>
+     * <div style="background-color: #d9edf7; border: 1px solid #bce8f1; color: #3a87ad; padding: 14px; border-radius: 2px; margin-top: 20px">
+     *     <strong>Find information how to download and install:</strong>
+     *     <a href="https://github.com/hgoebl/mobile-detect.js/">github.com/hgoebl/mobile-detect.js/</a>
+     * </div>
+     *
+     * @example <pre>
+     *     var md = new MobileDetect(window.navigator.userAgent);
+     *     if (md.mobile()) {
+     *         location.href = (md.mobileGrade() === 'A') ? '/mobile/' : '/lynx/';
+     *     }
+     * </pre>
+     *
+     * @param {string} userAgent typically taken from window.navigator.userAgent or http_header['User-Agent']
+     * @param {number} [maxPhoneWidth=600] <strong>only for browsers</strong> specify a value for the maximum
+     *        width of smallest device side (in logical "CSS" pixels) until a device detected as mobile will be handled
+     *        as phone.
+     *        This is only used in cases where the device cannot be classified as phone or tablet.<br>
+     *        See <a href="http://developer.android.com/guide/practices/screens_support.html">Declaring Tablet Layouts
+     *        for Android</a>.<br>
+     *        If you provide a value < 0, then this "fuzzy" check is disabled.
+     * @constructor
+     * @global
+     */
+    function MobileDetect(userAgent, maxPhoneWidth) {
+        this.ua = userAgent || '';
+        this._cache = {};
+        //600dp is typical 7" tablet minimum width
+        this.maxPhoneWidth = maxPhoneWidth || 600;
+    }
+
+    MobileDetect.prototype = {
+        constructor: MobileDetect,
+
+        /**
+         * Returns the detected phone or tablet type or <tt>null</tt> if it is not a mobile device.
+         * <br>
+         * For a list of possible return values see {@link MobileDetect#phone} and {@link MobileDetect#tablet}.<br>
+         * <br>
+         * If the device is not detected by the regular expressions from Mobile-Detect, a test is made against
+         * the patterns of <a href="http://detectmobilebrowsers.com/">detectmobilebrowsers.com</a>. If this test
+         * is positive, a value of <code>UnknownPhone</code>, <code>UnknownTablet</code> or
+         * <code>UnknownMobile</code> is returned.<br>
+         * When used in browser, the decision whether phone or tablet is made based on <code>screen.width/height</code>.<br>
+         * <br>
+         * When used server-side (node.js), there is no way to tell the difference between <code>UnknownTablet</code>
+         * and <code>UnknownMobile</code>, so you will get <code>UnknownMobile</code> here.<br>
+         * Be aware that since v1.0.0 in this special case you will get <code>UnknownMobile</code> only for:
+         * {@link MobileDetect#mobile}, not for {@link MobileDetect#phone} and {@link MobileDetect#tablet}.
+         * In versions before v1.0.0 all 3 methods returned <code>UnknownMobile</code> which was tedious to use.
+         * <br>
+         * In most cases you will use the return value just as a boolean.
+         *
+         * @returns {String} the key for the phone family or tablet family, e.g. "Nexus".
+         * @function MobileDetect#mobile
+         */
+        mobile: function () {
+            impl.prepareDetectionCache(this._cache, this.ua, this.maxPhoneWidth);
+            return this._cache.mobile;
+        },
+
+        /**
+         * Returns the detected phone type/family string or <tt>null</tt>.
+         * <br>
+         * The returned tablet (family or producer) is one of following keys:<br>
+         * <br><tt>iPhone, BlackBerry, HTC, Nexus, Dell, Motorola, Samsung, LG, Sony, Asus,
+         * Micromax, Palm, Vertu, Pantech, Fly, Wiko, iMobile, SimValley, Wolfgang,
+         * Alcatel, Nintendo, Amoi, INQ, GenericPhone</tt><br>
+         * <br>
+         * If the device is not detected by the regular expressions from Mobile-Detect, a test is made against
+         * the patterns of <a href="http://detectmobilebrowsers.com/">detectmobilebrowsers.com</a>. If this test
+         * is positive, a value of <code>UnknownPhone</code> or <code>UnknownMobile</code> is returned.<br>
+         * When used in browser, the decision whether phone or tablet is made based on <code>screen.width/height</code>.<br>
+         * <br>
+         * When used server-side (node.js), there is no way to tell the difference between <code>UnknownTablet</code>
+         * and <code>UnknownMobile</code>, so you will get <code>null</code> here, while {@link MobileDetect#mobile}
+         * will return <code>UnknownMobile</code>.<br>
+         * Be aware that since v1.0.0 in this special case you will get <code>UnknownMobile</code> only for:
+         * {@link MobileDetect#mobile}, not for {@link MobileDetect#phone} and {@link MobileDetect#tablet}.
+         * In versions before v1.0.0 all 3 methods returned <code>UnknownMobile</code> which was tedious to use.
+         * <br>
+         * In most cases you will use the return value just as a boolean.
+         *
+         * @returns {String} the key of the phone family or producer, e.g. "iPhone"
+         * @function MobileDetect#phone
+         */
+        phone: function () {
+            impl.prepareDetectionCache(this._cache, this.ua, this.maxPhoneWidth);
+            return this._cache.phone;
+        },
+
+        /**
+         * Returns the detected tablet type/family string or <tt>null</tt>.
+         * <br>
+         * The returned tablet (family or producer) is one of following keys:<br>
+         * <br><tt>iPad, NexusTablet, SamsungTablet, Kindle, SurfaceTablet, HPTablet, AsusTablet,
+         * BlackBerryTablet, HTCtablet, MotorolaTablet, NookTablet, AcerTablet,
+         * ToshibaTablet, LGTablet, FujitsuTablet, PrestigioTablet, LenovoTablet,
+         * DellTablet, YarvikTablet, MedionTablet, ArnovaTablet, IntensoTablet, IRUTablet,
+         * MegafonTablet, EbodaTablet, AllViewTablet, ArchosTablet, AinolTablet,
+         * SonyTablet, PhilipsTablet, CubeTablet, CobyTablet, MIDTablet, MSITablet,
+         * SMiTTablet, RockChipTablet, FlyTablet, bqTablet, HuaweiTablet, NecTablet,
+         * PantechTablet, BronchoTablet, VersusTablet, ZyncTablet, PositivoTablet,
+         * NabiTablet, KoboTablet, DanewTablet, TexetTablet, PlaystationTablet,
+         * TrekstorTablet, PyleAudioTablet, AdvanTablet, DanyTechTablet, GalapadTablet,
+         * MicromaxTablet, KarbonnTablet, AllFineTablet, PROSCANTablet, YONESTablet,
+         * ChangJiaTablet, GUTablet, PointOfViewTablet, OvermaxTablet, HCLTablet,
+         * DPSTablet, VistureTablet, CrestaTablet, MediatekTablet, ConcordeTablet,
+         * GoCleverTablet, ModecomTablet, VoninoTablet, ECSTablet, StorexTablet,
+         * VodafoneTablet, EssentielBTablet, RossMoorTablet, iMobileTablet, TolinoTablet,
+         * AudioSonicTablet, AMPETablet, SkkTablet, TecnoTablet, JXDTablet, iJoyTablet,
+         * FX2Tablet, XoroTablet, ViewsonicTablet, OdysTablet, CaptivaTablet,
+         * IconbitTablet, TeclastTablet, OndaTablet, JaytechTablet, BlaupunktTablet,
+         * DigmaTablet, EvolioTablet, LavaTablet, CelkonTablet, WolderTablet, MiTablet,
+         * NibiruTablet, NexoTablet, UbislateTablet, PocketBookTablet, Hudl,
+         * TelstraTablet, GenericTablet</tt><br>
+         * <br>
+         * If the device is not detected by the regular expressions from Mobile-Detect, a test is made against
+         * the patterns of <a href="http://detectmobilebrowsers.com/">detectmobilebrowsers.com</a>. If this test
+         * is positive, a value of <code>UnknownTablet</code> or <code>UnknownMobile</code> is returned.<br>
+         * When used in browser, the decision whether phone or tablet is made based on <code>screen.width/height</code>.<br>
+         * <br>
+         * When used server-side (node.js), there is no way to tell the difference between <code>UnknownTablet</code>
+         * and <code>UnknownMobile</code>, so you will get <code>null</code> here, while {@link MobileDetect#mobile}
+         * will return <code>UnknownMobile</code>.<br>
+         * Be aware that since v1.0.0 in this special case you will get <code>UnknownMobile</code> only for:
+         * {@link MobileDetect#mobile}, not for {@link MobileDetect#phone} and {@link MobileDetect#tablet}.
+         * In versions before v1.0.0 all 3 methods returned <code>UnknownMobile</code> which was tedious to use.
+         * <br>
+         * In most cases you will use the return value just as a boolean.
+         *
+         * @returns {String} the key of the tablet family or producer, e.g. "SamsungTablet"
+         * @function MobileDetect#tablet
+         */
+        tablet: function () {
+            impl.prepareDetectionCache(this._cache, this.ua, this.maxPhoneWidth);
+            return this._cache.tablet;
+        },
+
+        /**
+         * Returns the detected user-agent string or <tt>null</tt>.
+         * <br>
+         * The returned user-agent is one of following keys:<br>
+         * <br><tt>Chrome, Dolfin, Opera, Skyfire, IE, Firefox, Bolt, TeaShark, Blazer, Safari,
+         * Tizen, UCBrowser, baiduboxapp, baidubrowser, DiigoBrowser, Puffin, Mercury,
+         * ObigoBrowser, NetFront, GenericBrowser</tt><br>
+         *
+         * @returns {String} the key for the detected user-agent or <tt>null</tt>
+         * @function MobileDetect#userAgent
+         */
+        userAgent: function () {
+            if (this._cache.userAgent === undefined) {
+                this._cache.userAgent = impl.findMatch(impl.mobileDetectRules.uas, this.ua);
+            }
+            return this._cache.userAgent;
+        },
+
+        /**
+         * Returns the detected operating system string or <tt>null</tt>.
+         * <br>
+         * The operating system is one of following keys:<br>
+         * <br><tt>AndroidOS, BlackBerryOS, PalmOS, SymbianOS, WindowsMobileOS, WindowsPhoneOS,
+         * iOS, MeeGoOS, MaemoOS, JavaOS, webOS, badaOS, BREWOS</tt><br>
+         *
+         * @returns {String} the key for the detected operating system.
+         * @function MobileDetect#os
+         */
+        os: function () {
+            if (this._cache.os === undefined) {
+                this._cache.os = impl.detectOS(this.ua);
+            }
+            return this._cache.os;
+        },
+
+        /**
+         * Get the version (as Number) of the given property in the User-Agent.
+         * <br>
+         * Will return a float number. (eg. 2_0 will return 2.0, 4.3.1 will return 4.31)
+         *
+         * @param {String} key a key defining a thing which has a version.<br>
+         *        You can use one of following keys:<br>
+         * <br><tt>Mobile, Build, Version, VendorID, iPad, iPhone, iPod, Kindle, Chrome, Coast,
+         * Dolfin, Firefox, Fennec, IE, NetFront, NokiaBrowser, Opera, Opera Mini, Opera
+         * Mobi, UC Browser, MQQBrowser, MicroMessenger, baiduboxapp, baidubrowser, Iron,
+         * Safari, Skyfire, Tizen, Webkit, Gecko, Trident, Presto, iOS, Android,
+         * BlackBerry, BREW, Java, Windows Phone OS, Windows Phone, Windows CE, Windows
+         * NT, Symbian, webOS</tt><br>
+         *
+         * @returns {Number} the version as float or <tt>NaN</tt> if User-Agent doesn't contain this version.
+         *          Be careful when comparing this value with '==' operator!
+         * @function MobileDetect#version
+         */
+        version: function (key) {
+            return impl.getVersion(key, this.ua);
+        },
+
+        /**
+         * Get the version (as String) of the given property in the User-Agent.
+         * <br>
+         *
+         * @param {String} key a key defining a thing which has a version.<br>
+         *        You can use one of following keys:<br>
+         * <br><tt>Mobile, Build, Version, VendorID, iPad, iPhone, iPod, Kindle, Chrome, Coast,
+         * Dolfin, Firefox, Fennec, IE, NetFront, NokiaBrowser, Opera, Opera Mini, Opera
+         * Mobi, UC Browser, MQQBrowser, MicroMessenger, baiduboxapp, baidubrowser, Iron,
+         * Safari, Skyfire, Tizen, Webkit, Gecko, Trident, Presto, iOS, Android,
+         * BlackBerry, BREW, Java, Windows Phone OS, Windows Phone, Windows CE, Windows
+         * NT, Symbian, webOS</tt><br>
+         *
+         * @returns {String} the "raw" version as String or <tt>null</tt> if User-Agent doesn't contain this version.
+         *
+         * @function MobileDetect#versionStr
+         */
+        versionStr: function (key) {
+            return impl.getVersionStr(key, this.ua);
+        },
+
+        /**
+         * Global test key against userAgent, os, phone, tablet and some other properties of userAgent string.
+         *
+         * @param {String} key the key (case-insensitive) of a userAgent, an operating system, phone or
+         *        tablet family.<br>
+         *        For a complete list of possible values, see {@link MobileDetect#userAgent},
+         *        {@link MobileDetect#os}, {@link MobileDetect#phone}, {@link MobileDetect#tablet}.<br>
+         *        Additionally you have following keys:<br>
+         * <br><tt>Bot, MobileBot, DesktopMode, TV, WebKit, Console, Watch</tt><br>
+         *
+         * @returns {boolean} <tt>true</tt> when the given key is one of the defined keys of userAgent, os, phone,
+         *                    tablet or one of the listed additional keys, otherwise <tt>false</tt>
+         * @function MobileDetect#is
+         */
+        is: function(key) {
+            return equalIC(key, this.userAgent()) ||
+                   equalIC(key, this.os()) ||
+                   equalIC(key, this.phone()) ||
+                   equalIC(key, this.tablet()) ||
+                   equalIC(key, impl.findMatch(impl.mobileDetectRules.utils, this.ua));
+        },
+
+        /**
+         * Do a quick test against navigator::userAgent.
+         *
+         * @param {String|RegExp} pattern the pattern, either as String or RegExp
+         *                        (a string will be converted to a case-insensitive RegExp).
+         * @returns {boolean} <tt>true</tt> when the pattern matches, otherwise <tt>false</tt>
+         * @function MobileDetect#match
+         */
+        match: function (pattern) {
+            if (!(pattern instanceof RegExp)) {
+                pattern = new RegExp(pattern, 'i');
+            }
+            return pattern.test(this.ua);
+        },
+
+        /**
+         * Checks whether the mobile device can be considered as phone regarding <code>screen.width</code>.
+         * <br>
+         * Obviously this method makes sense in browser environments only (not for Node.js)!
+         * @param {number} [maxPhoneWidth] the maximum logical pixels (aka. CSS-pixels) to be considered as phone.<br>
+         *        The argument is optional and if not present or falsy, the value of the constructor is taken.
+         * @returns {boolean|undefined} <code>undefined</code> if screen size wasn't detectable, else <code>true</code>
+         *          when screen.width is less or equal to maxPhoneWidth, otherwise <code>false</code>.<br>
+         *          Will always return <code>undefined</code> server-side.
+         */
+        isPhoneSized: function (maxPhoneWidth) {
+            return MobileDetect.isPhoneSized(maxPhoneWidth || this.maxPhoneWidth);
+        },
+
+        /**
+         * Returns the mobile grade ('A', 'B', 'C').
+         *
+         * @returns {String} one of the mobile grades ('A', 'B', 'C').
+         * @function MobileDetect#mobileGrade
+         */
+        mobileGrade: function () {
+            if (this._cache.grade === undefined) {
+                this._cache.grade = impl.mobileGrade(this);
+            }
+            return this._cache.grade;
+        }
+    };
+
+    // environment-dependent
+    if (typeof window !== 'undefined' && window.screen) {
+        MobileDetect.isPhoneSized = function (maxPhoneWidth) {
+            return maxPhoneWidth < 0 ? undefined : impl.getDeviceSmallerSide() <= maxPhoneWidth;
+        };
+    } else {
+        MobileDetect.isPhoneSized = function () {};
+    }
+
+    // should not be replaced by a completely new object - just overwrite existing methods
+    MobileDetect._impl = impl;
+
+    return MobileDetect;
+}); // end of call of define()
+})((function (undefined) {
+    if (typeof module !== 'undefined' && module.exports) {
+        return function (factory) { module.exports = factory(); };
+    } else if (typeof define === 'function' && define.amd) {
+        return define;
+    } else if (typeof window !== 'undefined') {
+        return function (factory) { window.MobileDetect = factory(); };
+    } else {
+        // please file a bug if you get this error!
+        throw new Error('unknown environment');
+    }
+})());
+},{}],29:[function(require,module,exports){
 (function (global){
 /*!
  * Platform.js v1.3.0 <http://mths.be/platform>
@@ -3076,11 +5631,11 @@ module.exports = new InputModule();
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],19:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 
 module.exports = require('./lib/');
 
-},{"./lib/":20}],20:[function(require,module,exports){
+},{"./lib/":31}],31:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -3169,7 +5724,7 @@ exports.connect = lookup;
 exports.Manager = require('./manager');
 exports.Socket = require('./socket');
 
-},{"./manager":21,"./socket":23,"./url":24,"debug":27,"socket.io-parser":58}],21:[function(require,module,exports){
+},{"./manager":32,"./socket":34,"./url":35,"debug":38,"socket.io-parser":69}],32:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -3629,7 +6184,7 @@ Manager.prototype.onreconnect = function(){
   this.emitAll('reconnect', attempt);
 };
 
-},{"./on":22,"./socket":23,"./url":24,"component-bind":25,"component-emitter":26,"debug":27,"engine.io-client":28,"object-component":55,"socket.io-parser":58}],22:[function(require,module,exports){
+},{"./on":33,"./socket":34,"./url":35,"component-bind":36,"component-emitter":37,"debug":38,"engine.io-client":39,"object-component":66,"socket.io-parser":69}],33:[function(require,module,exports){
 
 /**
  * Module exports.
@@ -3655,7 +6210,7 @@ function on(obj, ev, fn) {
   };
 }
 
-},{}],23:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -4035,7 +6590,7 @@ Socket.prototype.disconnect = function(){
   return this;
 };
 
-},{"./on":22,"component-bind":25,"component-emitter":26,"debug":27,"has-binary":52,"indexof":54,"socket.io-parser":58,"to-array":62}],24:[function(require,module,exports){
+},{"./on":33,"component-bind":36,"component-emitter":37,"debug":38,"has-binary":63,"indexof":65,"socket.io-parser":69,"to-array":73}],35:[function(require,module,exports){
 (function (global){
 
 /**
@@ -4110,7 +6665,7 @@ function url(uri, loc){
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"debug":27,"parseuri":56}],25:[function(require,module,exports){
+},{"debug":38,"parseuri":67}],36:[function(require,module,exports){
 /**
  * Slice reference.
  */
@@ -4135,7 +6690,7 @@ module.exports = function(obj, fn){
   }
 };
 
-},{}],26:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -4301,7 +6856,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],27:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 
 /**
  * Expose `debug()` as the module.
@@ -4440,11 +6995,11 @@ try {
   if (window.localStorage) debug.enable(localStorage.debug);
 } catch(e){}
 
-},{}],28:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 
 module.exports =  require('./lib/');
 
-},{"./lib/":29}],29:[function(require,module,exports){
+},{"./lib/":40}],40:[function(require,module,exports){
 
 module.exports = require('./socket');
 
@@ -4456,7 +7011,7 @@ module.exports = require('./socket');
  */
 module.exports.parser = require('engine.io-parser');
 
-},{"./socket":30,"engine.io-parser":39}],30:[function(require,module,exports){
+},{"./socket":41,"engine.io-parser":50}],41:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -5108,7 +7663,7 @@ Socket.prototype.filterUpgrades = function (upgrades) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./transport":31,"./transports":32,"component-emitter":26,"debug":27,"engine.io-parser":39,"indexof":54,"parsejson":48,"parseqs":49,"parseuri":50}],31:[function(require,module,exports){
+},{"./transport":42,"./transports":43,"component-emitter":37,"debug":38,"engine.io-parser":50,"indexof":65,"parsejson":59,"parseqs":60,"parseuri":61}],42:[function(require,module,exports){
 /**
  * Module dependencies.
  */
@@ -5260,7 +7815,7 @@ Transport.prototype.onClose = function () {
   this.emit('close');
 };
 
-},{"component-emitter":26,"engine.io-parser":39}],32:[function(require,module,exports){
+},{"component-emitter":37,"engine.io-parser":50}],43:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies
@@ -5317,7 +7872,7 @@ function polling(opts){
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling-jsonp":33,"./polling-xhr":34,"./websocket":36,"xmlhttprequest":37}],33:[function(require,module,exports){
+},{"./polling-jsonp":44,"./polling-xhr":45,"./websocket":47,"xmlhttprequest":48}],44:[function(require,module,exports){
 (function (global){
 
 /**
@@ -5553,7 +8108,7 @@ JSONPPolling.prototype.doWrite = function (data, fn) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":35,"component-inherit":38}],34:[function(require,module,exports){
+},{"./polling":46,"component-inherit":49}],45:[function(require,module,exports){
 (function (global){
 /**
  * Module requirements.
@@ -5908,7 +8463,7 @@ function unloadHandler() {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./polling":35,"component-emitter":26,"component-inherit":38,"debug":27,"xmlhttprequest":37}],35:[function(require,module,exports){
+},{"./polling":46,"component-emitter":37,"component-inherit":49,"debug":38,"xmlhttprequest":48}],46:[function(require,module,exports){
 /**
  * Module dependencies.
  */
@@ -6155,7 +8710,7 @@ Polling.prototype.uri = function(){
   return schema + '://' + this.hostname + port + this.path + query;
 };
 
-},{"../transport":31,"component-inherit":38,"debug":27,"engine.io-parser":39,"parseqs":49,"xmlhttprequest":37}],36:[function(require,module,exports){
+},{"../transport":42,"component-inherit":49,"debug":38,"engine.io-parser":50,"parseqs":60,"xmlhttprequest":48}],47:[function(require,module,exports){
 /**
  * Module dependencies.
  */
@@ -6386,7 +8941,7 @@ WS.prototype.check = function(){
   return !!WebSocket && !('__initialize' in WebSocket && this.name === WS.prototype.name);
 };
 
-},{"../transport":31,"component-inherit":38,"debug":27,"engine.io-parser":39,"parseqs":49,"ws":51}],37:[function(require,module,exports){
+},{"../transport":42,"component-inherit":49,"debug":38,"engine.io-parser":50,"parseqs":60,"ws":62}],48:[function(require,module,exports){
 // browser shim for xmlhttprequest module
 var hasCORS = require('has-cors');
 
@@ -6424,7 +8979,7 @@ module.exports = function(opts) {
   }
 }
 
-},{"has-cors":46}],38:[function(require,module,exports){
+},{"has-cors":57}],49:[function(require,module,exports){
 
 module.exports = function(a, b){
   var fn = function(){};
@@ -6432,7 +8987,7 @@ module.exports = function(a, b){
   a.prototype = new fn;
   a.prototype.constructor = a;
 };
-},{}],39:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 (function (global){
 /**
  * Module dependencies.
@@ -7002,7 +9557,7 @@ exports.decodePayloadAsBinary = function (data, binaryType, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./keys":40,"after":41,"arraybuffer.slice":42,"base64-arraybuffer":43,"blob":44,"utf8":45}],40:[function(require,module,exports){
+},{"./keys":51,"after":52,"arraybuffer.slice":53,"base64-arraybuffer":54,"blob":55,"utf8":56}],51:[function(require,module,exports){
 
 /**
  * Gets the keys for an object.
@@ -7023,7 +9578,7 @@ module.exports = Object.keys || function keys (obj){
   return arr;
 };
 
-},{}],41:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 module.exports = after
 
 function after(count, callback, err_cb) {
@@ -7053,7 +9608,7 @@ function after(count, callback, err_cb) {
 
 function noop() {}
 
-},{}],42:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 /**
  * An abstraction for slicing an arraybuffer even when
  * ArrayBuffer.prototype.slice is not supported
@@ -7084,7 +9639,7 @@ module.exports = function(arraybuffer, start, end) {
   return result.buffer;
 };
 
-},{}],43:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 /*
  * base64-arraybuffer
  * https://github.com/niklasvh/base64-arraybuffer
@@ -7145,7 +9700,7 @@ module.exports = function(arraybuffer, start, end) {
   };
 })("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
-},{}],44:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 (function (global){
 /**
  * Create a blob builder even when vendor prefixes exist
@@ -7198,7 +9753,7 @@ module.exports = (function() {
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],45:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 (function (global){
 /*! http://mths.be/utf8js v2.0.0 by @mathias */
 ;(function(root) {
@@ -7441,7 +9996,7 @@ module.exports = (function() {
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],46:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -7466,7 +10021,7 @@ try {
   module.exports = false;
 }
 
-},{"global":47}],47:[function(require,module,exports){
+},{"global":58}],58:[function(require,module,exports){
 
 /**
  * Returns `this`. Execute this without a "context" (i.e. without it being
@@ -7476,7 +10031,7 @@ try {
 
 module.exports = (function () { return this; })();
 
-},{}],48:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 (function (global){
 /**
  * JSON parse.
@@ -7511,7 +10066,7 @@ module.exports = function parsejson(data) {
   }
 };
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],49:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 /**
  * Compiles a querystring
  * Returns string representation of the object
@@ -7550,7 +10105,7 @@ exports.decode = function(qs){
   return qry;
 };
 
-},{}],50:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 /**
  * Parses an URI
  *
@@ -7591,7 +10146,7 @@ module.exports = function parseuri(str) {
     return uri;
 };
 
-},{}],51:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -7636,7 +10191,7 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],52:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 (function (global){
 
 /*
@@ -7698,12 +10253,12 @@ function hasBinary(data) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"isarray":53}],53:[function(require,module,exports){
+},{"isarray":64}],64:[function(require,module,exports){
 module.exports = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
-},{}],54:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 
 var indexOf = [].indexOf;
 
@@ -7714,7 +10269,7 @@ module.exports = function(arr, obj){
   }
   return -1;
 };
-},{}],55:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 
 /**
  * HOP ref.
@@ -7799,7 +10354,7 @@ exports.length = function(obj){
 exports.isEmpty = function(obj){
   return 0 == exports.length(obj);
 };
-},{}],56:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 /**
  * Parses an URI
  *
@@ -7826,7 +10381,7 @@ module.exports = function parseuri(str) {
   return uri;
 };
 
-},{}],57:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 (function (global){
 /*global Blob,File*/
 
@@ -7971,7 +10526,7 @@ exports.removeBlobs = function(data, callback) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./is-buffer":59,"isarray":60}],58:[function(require,module,exports){
+},{"./is-buffer":70,"isarray":71}],69:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -8369,7 +10924,7 @@ function error(data){
   };
 }
 
-},{"./binary":57,"./is-buffer":59,"component-emitter":26,"debug":27,"isarray":60,"json3":61}],59:[function(require,module,exports){
+},{"./binary":68,"./is-buffer":70,"component-emitter":37,"debug":38,"isarray":71,"json3":72}],70:[function(require,module,exports){
 (function (global){
 
 module.exports = isBuf;
@@ -8386,9 +10941,9 @@ function isBuf(obj) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],60:[function(require,module,exports){
-module.exports=require(53)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/soundworks/node_modules/socket.io-client/node_modules/has-binary/node_modules/isarray/index.js":53}],61:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
+module.exports=require(64)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/socket.io-client/node_modules/has-binary/node_modules/isarray/index.js":64}],72:[function(require,module,exports){
 /*! JSON v3.2.6 | http://bestiejs.github.io/json3 | Copyright 2012-2013, Kit Cambridge | http://kit.mit-license.org */
 ;(function (window) {
   // Convenience aliases.
@@ -9251,7 +11806,7 @@ module.exports=require(53)
   }
 }(this));
 
-},{}],62:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 module.exports = toArray
 
 function toArray(list, index) {
@@ -9266,7 +11821,7 @@ function toArray(list, index) {
     return array
 }
 
-},{}],63:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 /**
  * @fileOverview Client-side syncronization component
  * @author Jean-Philippe.Lambert@ircam.fr, Sebastien.Robaszkiewicz@ircam.fr,
@@ -9737,13 +12292,13 @@ MIXIN$0(SyncClient.prototype,proto$0);proto$0=void 0;return SyncClient;})();
 
 module.exports = SyncClient;
 
-},{"debug":64}],64:[function(require,module,exports){
-module.exports=require(2)
-},{"./debug":65,"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/debug/browser.js":2}],65:[function(require,module,exports){
-module.exports=require(3)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/debug/debug.js":3,"ms":66}],66:[function(require,module,exports){
-module.exports=require(4)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/debug/node_modules/ms/index.js":4}],67:[function(require,module,exports){
+},{"debug":75}],75:[function(require,module,exports){
+module.exports=require(25)
+},{"./debug":76,"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/calibration/node_modules/debug/browser.js":25}],76:[function(require,module,exports){
+arguments[4][3][0].apply(exports,arguments)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/debug/debug.js":3,"ms":77}],77:[function(require,module,exports){
+module.exports=require(27)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/calibration/node_modules/debug/node_modules/ms/index.js":27}],78:[function(require,module,exports){
 "use strict";
 
 /* Copyright 2013 Chris Wilson
@@ -9877,255 +12432,20 @@ BiquadFilterNode.type and OscillatorNode.type.
   }
 })(window);
 
-},{}],68:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 // monkeypatch old webAudioAPI
 require("./ac-monkeypatch");
+
 // exposes a single instance
-module.exports = new AudioContext();
+var audioContext;
 
-},{"./ac-monkeypatch":67}],69:[function(require,module,exports){
-"use strict";
+if (window.AudioContext) audioContext = new window.AudioContext();
 
-var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
+module.exports = audioContext;
 
-var _createClass = require("babel-runtime/helpers/create-class")["default"];
-
-var defaultAudioContext = require("./audio-context");
-
-/**
- * @class TimeEngine
- * @classdesc Base class for time engines
- *
- * Time engines are components that generate more or less regular audio events and/or playback a media stream.
- * They implement one or multiple interfaces to be synchronized by a master such as a scheduler, a transport or a play-control.
- * The provided interfaces are "scheduled", "transported", and "play-controlled".
- *
- * In the "scheduled" interface the engine implements a method "advanceTime" that is called by the master (usually the scheduler)
- * and returns the delay until the next call of "advanceTime". The master provides the engine with a function "resetNextTime"
- * to reschedule the next call to another time.
- *
- * In the "transported" interface the master (usually a transport) first calls the method "syncPosition" that returns the position
- * of the first event generated by the engine regarding the playing direction (sign of the speed argument). Events are generated
- * through the method "advancePosition" that returns the position of the next event generated through "advancePosition".
- *
- * In the "speed-controlled" interface the engine is controlled by the method "syncSpeed".
- *
- * For all interfaces the engine is provided with the attribute getters "currentTime" and "currentPosition" (for the case that the master
- * does not implement these attribute getters, the base class provides default implementations).
- */
-
-var TimeEngine = (function () {
-
-  /**
-   * @constructor
-   */
-
-  function TimeEngine() {
-    var audioContext = arguments[0] === undefined ? defaultAudioContext : arguments[0];
-
-    _classCallCheck(this, TimeEngine);
-
-    this.audioContext = audioContext;
-
-    /**
-     * Current master
-     * @type {Object}
-     */
-    this.master = null;
-
-    /**
-     * Interface currently used
-     * @type {String}
-     */
-    this["interface"] = null;
-
-    /**
-     * Output audio node
-     * @type {Object}
-     */
-    this.outputNode = null;
-  }
-
-  _createClass(TimeEngine, {
-    currentTime: {
-
-      /**
-       * Get the time engine's current master time
-       * @type {Function}
-       *
-       * This function provided by the master.
-       */
-
-      get: function () {
-        return this.audioContext.currentTime;
-      }
-    },
-    currentPosition: {
-
-      /**
-       * Get the time engine's current master position
-       * @type {Function}
-       *
-       * This function provided by the master.
-       */
-
-      get: function () {
-        return 0;
-      }
-    },
-    resetNextTime: {
-
-      /**
-       * Function provided by the scheduler to reset the engine's next time
-       * @param {Number} time new engine time (immediately if not specified)
-       */
-
-      value: function resetNextTime() {
-        var time = arguments[0] === undefined ? null : arguments[0];
-      }
-    },
-    resetNextPosition: {
-
-      /**
-       * Function provided by the transport to reset the next position or to request resynchronizing the engine's position
-       * @param {Number} position new engine position (will call syncPosition with the current position if not specified)
-       */
-
-      value: function resetNextPosition() {
-        var position = arguments[0] === undefined ? null : arguments[0];
-      }
-    },
-    __setGetters: {
-      value: function __setGetters(getCurrentTime, getCurrentPosition) {
-        if (getCurrentTime) {
-          Object.defineProperty(this, "currentTime", {
-            configurable: true,
-            get: getCurrentTime
-          });
-        }
-
-        if (getCurrentPosition) {
-          Object.defineProperty(this, "currentPosition", {
-            configurable: true,
-            get: getCurrentPosition
-          });
-        }
-      }
-    },
-    __deleteGetters: {
-      value: function __deleteGetters() {
-        delete this.currentTime;
-        delete this.currentPosition;
-      }
-    },
-    implementsScheduled: {
-
-      /**
-       * Check whether the time engine implements the scheduled interface
-       **/
-
-      value: function implementsScheduled() {
-        return this.advanceTime && this.advanceTime instanceof Function;
-      }
-    },
-    implementsTransported: {
-
-      /**
-       * Check whether the time engine implements the transported interface
-       **/
-
-      value: function implementsTransported() {
-        return this.syncPosition && this.syncPosition instanceof Function && this.advancePosition && this.advancePosition instanceof Function;
-      }
-    },
-    implementsSpeedControlled: {
-
-      /**
-       * Check whether the time engine implements the speed-controlled interface
-       **/
-
-      value: function implementsSpeedControlled() {
-        return this.syncSpeed && this.syncSpeed instanceof Function;
-      }
-    },
-    setScheduled: {
-      value: function setScheduled(master, resetNextTime, getCurrentTime, getCurrentPosition) {
-        this.master = master;
-        this["interface"] = "scheduled";
-
-        this.__setGetters(getCurrentTime, getCurrentPosition);
-
-        if (resetNextTime) this.resetNextTime = resetNextTime;
-      }
-    },
-    setTransported: {
-      value: function setTransported(master, resetNextPosition, getCurrentTime, getCurrentPosition) {
-        this.master = master;
-        this["interface"] = "transported";
-
-        this.__setGetters(getCurrentTime, getCurrentPosition);
-
-        if (resetNextPosition) this.resetNextPosition = resetNextPosition;
-      }
-    },
-    setSpeedControlled: {
-      value: function setSpeedControlled(master, getCurrentTime, getCurrentPosition) {
-        this.master = master;
-        this["interface"] = "speed-controlled";
-
-        this.__setGetters(getCurrentTime, getCurrentPosition);
-      }
-    },
-    resetInterface: {
-      value: function resetInterface() {
-        this.__deleteGetters();
-
-        delete this.resetNextTime;
-        delete this.resetNextPosition;
-
-        this.master = null;
-        this["interface"] = null;
-      }
-    },
-    connect: {
-
-      /**
-       * Connect audio node
-       * @param {Object} target audio node
-       */
-
-      value: function connect(target) {
-        this.outputNode.connect(target);
-        return this;
-      }
-    },
-    disconnect: {
-
-      /**
-       * Disconnect audio node
-       * @param {Number} connection connection to be disconnected
-       */
-
-      value: function disconnect(connection) {
-        this.outputNode.disconnect(connection);
-        return this;
-      }
-    }
-  });
-
-  return TimeEngine;
-})();
-
-module.exports = TimeEngine;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE audio time engine base class
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
-
-},{"./audio-context":68,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82}],70:[function(require,module,exports){
+},{"./ac-monkeypatch":78}],80:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -10138,13 +12458,164 @@ var _createClass = require("babel-runtime/helpers/create-class")["default"];
 
 var _core = require("babel-runtime/core-js")["default"];
 
-var TimeEngine = require("../core/time-engine");
+var TimeEngine = require("./time-engine");
+var defaultAudioContext = require("./audio-context");
+
+/**
+ * @class AudioTimeEngine
+ */
+
+var AudioTimeEngine = (function (_TimeEngine) {
+  function AudioTimeEngine() {
+    var audioContext = arguments[0] === undefined ? defaultAudioContext : arguments[0];
+
+    _classCallCheck(this, AudioTimeEngine);
+
+    _get(_core.Object.getPrototypeOf(AudioTimeEngine.prototype), "constructor", this).call(this);
+
+    this.audioContext = audioContext;
+    this.outputNode = null;
+  }
+
+  _inherits(AudioTimeEngine, _TimeEngine);
+
+  _createClass(AudioTimeEngine, {
+    connect: {
+      value: function connect(target) {
+        this.outputNode.connect(target);
+        return this;
+      }
+    },
+    disconnect: {
+      value: function disconnect(connection) {
+        this.outputNode.disconnect(connection);
+        return this;
+      }
+    }
+  });
+
+  return AudioTimeEngine;
+})(TimeEngine);
+
+module.exports = AudioTimeEngine;
+
+},{"./audio-context":79,"./time-engine":81,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],81:[function(require,module,exports){
+"use strict";
+
+var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
+
+var _createClass = require("babel-runtime/helpers/create-class")["default"];
+
+/**
+ * @class TimeEngine
+ */
+
+var TimeEngine = (function () {
+  function TimeEngine() {
+    _classCallCheck(this, TimeEngine);
+
+    this.master = null;
+    this.outputNode = null;
+  }
+
+  _createClass(TimeEngine, {
+    currentTime: {
+      get: function () {
+        if (this.master) return this.master.currentTime;
+
+        return undefined;
+      }
+    },
+    currentPosition: {
+      get: function () {
+        var master = this.master;
+
+        if (master && master.currentPosition !== undefined) return master.currentPosition;
+
+        return undefined;
+      }
+    },
+    implementsScheduled: {
+
+      /**
+       * Scheduled interface
+       *   - advanceTime(time), called to generate next event at given time, returns next time
+       */
+
+      value: function implementsScheduled() {
+        return this.advanceTime && this.advanceTime instanceof Function;
+      }
+    },
+    resetTime: {
+      value: function resetTime() {
+        var time = arguments[0] === undefined ? undefined : arguments[0];
+
+        if (this.master) this.master.resetEngineTime(this, time);
+      }
+    },
+    implementsTransported: {
+
+      /**
+       * Transported interface
+       *   - syncPosition(time, position, speed), called to reposition TimeEngine, returns next position
+       *   - advancePosition(time, position, speed), called to generate next event at given time and position, returns next position
+       */
+
+      value: function implementsTransported() {
+        return this.syncPosition && this.syncPosition instanceof Function && this.advancePosition && this.advancePosition instanceof Function;
+      }
+    },
+    resetPosition: {
+      value: function resetPosition() {
+        var position = arguments[0] === undefined ? undefined : arguments[0];
+
+        if (this.master) this.master.resetEnginePosition(this, position);
+      }
+    },
+    implementsSpeedControlled: {
+
+      /**
+       * Speed-controlled interface
+       *   - syncSpeed(time, position, speed, ), called to
+       */
+
+      value: function implementsSpeedControlled() {
+        return this.syncSpeed && this.syncSpeed instanceof Function;
+      }
+    }
+  });
+
+  return TimeEngine;
+})();
+
+module.exports = TimeEngine;
+
+},{"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95}],82:[function(require,module,exports){
+"use strict";
+
+var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
+
+var _inherits = require("babel-runtime/helpers/inherits")["default"];
+
+var _get = require("babel-runtime/helpers/get")["default"];
+
+var _createClass = require("babel-runtime/helpers/create-class")["default"];
+
+var _core = require("babel-runtime/core-js")["default"];
+
+var AudioTimeEngine = require("../core/audio-time-engine");
+
+function optOrDef(opt, def) {
+  if (opt !== undefined) {
+    return opt;
+  }return def;
+}
 
 /**
  * @class GranularEngine
  */
 
-var GranularEngine = (function (_TimeEngine) {
+var GranularEngine = (function (_AudioTimeEngine) {
   /**
    * @constructor
    * @param {AudioBuffer} buffer initial audio buffer for granular synthesis
@@ -10165,132 +12636,151 @@ var GranularEngine = (function (_TimeEngine) {
      * Audio buffer
      * @type {AudioBuffer}
      */
-    this.buffer = options.buffer || null;
+    this.buffer = optOrDef(options.buffer, null);
 
     /**
      * Absolute grain period in sec
      * @type {Number}
      */
-    this.periodAbs = options.periodAbs || 0.01;
+    this.periodAbs = optOrDef(options.periodAbs, 0.01);
 
     /**
      * Grain period relative to absolute duration
      * @type {Number}
      */
-    this.periodRel = options.periodRel || 0;
+    this.periodRel = optOrDef(options.periodRel, 0);
 
     /**
      * Amout of random grain period variation relative to grain period
      * @type {Number}
      */
-    this.periodVar = options.periodVar || 0;
+    this.periodVar = optOrDef(options.periodVar, 0);
 
     /**
      * Grain position (onset time in audio buffer) in sec
      * @type {Number}
      */
-    this.position = options.position || 0;
+    this.position = optOrDef(options.position, 0);
 
     /**
      * Amout of random grain position variation in sec
      * @type {Number}
      */
-    this.positionVar = options.positionVar || 0.003;
+    this.positionVar = optOrDef(options.positionVar, 0.003);
 
     /**
      * Absolute grain duration in sec
      * @type {Number}
      */
-    this.durationAbs = options.durationAbs || 0.1; // absolute grain duration
+    this.durationAbs = optOrDef(options.durationAbs, 0.1); // absolute grain duration
 
     /**
      * Grain duration relative to grain period (overlap)
      * @type {Number}
      */
-    this.durationRel = options.durationRel || 0;
+    this.durationRel = optOrDef(options.durationRel, 0);
 
     /**
      * Absolute attack time in sec
      * @type {Number}
      */
-    this.attackAbs = options.attackAbs || 0;
+    this.attackAbs = optOrDef(options.attackAbs, 0);
 
     /**
      * Attack time relative to grain duration
      * @type {Number}
      */
-    this.attackRel = options.attackRel || 0.5;
+    this.attackRel = optOrDef(options.attackRel, 0.5);
 
     /**
      * Shape of attack
      * @type {String} 'lin' for linear ramp, 'exp' for exponential
      */
-    this.attackShape = options.attackShape || "lin";
+    this.attackShape = optOrDef(options.attackShape, "lin");
 
     /**
      * Absolute release time in sec
      * @type {Number}
      */
-    this.releaseAbs = options.releaseAbs || 0;
+    this.releaseAbs = optOrDef(options.releaseAbs, 0);
 
     /**
      * Release time relative to grain duration
      * @type {Number}
      */
-    this.releaseRel = options.releaseRel || 0.5;
+    this.releaseRel = optOrDef(options.releaseRel, 0.5);
 
     /**
      * Shape of release
      * @type {String} 'lin' for linear ramp, 'exp' for exponential
      */
-    this.releaseShape = options.releaseShape || "lin";
+    this.releaseShape = optOrDef(options.releaseShape, "lin");
 
     /**
      * Offset (start/end value) for exponential attack/release
      * @type {Number} offset
      */
-    this.expRampOffset = options.expRampOffset || 0.0001;
+    this.expRampOffset = optOrDef(options.expRampOffset, 0.0001);
 
     /**
      * Grain resampling in cent
      * @type {Number}
      */
-    this.resampling = options.resampling || 0;
+    this.resampling = optOrDef(options.resampling, 0);
 
     /**
      * Amout of random resampling variation in cent
      * @type {Number}
      */
-    this.resamplingVar = options.resamplingVar || 0;
+    this.resamplingVar = optOrDef(options.resamplingVar, 0);
+
+    /**
+     * Linear gain factor
+     * @type {Number}
+     */
+    this.gain = optOrDef(options.gain, 1);
 
     /**
      * Whether the grain position refers to the center of the grain (or the beginning)
      * @type {Bool}
      */
-    this.centered = options.centered || true;
+    this.centered = optOrDef(options.centered, true);
 
     /**
      * Whether the audio buffer and grain position are considered as cyclic
      * @type {Bool}
      */
-    this.cyclic = options.cyclic || false;
+    this.cyclic = optOrDef(options.cyclic, false);
 
-    this.__gainNode = this.audioContext.createGain();
-    this.__gainNode.gain.value = options.gain || 1;
+    /**
+     * Portion at the end of the audio buffer that has been copied from the beginning to assure cyclic behavior
+     * @type {Number}
+     */
+    this.wrapAroundExtension = optOrDef(options.wrapAroundExtension, 0);
 
-    this.outputNode = this.__gainNode;
+    this.outputNode = this.audioContext.createGain();
   }
 
-  _inherits(GranularEngine, _TimeEngine);
+  _inherits(GranularEngine, _AudioTimeEngine);
 
   _createClass(GranularEngine, {
     bufferDuration: {
+
+      /**
+       * Get buffer duration (excluding wrapAroundExtension)
+       * @return {Number} current buffer duration
+       */
+
       get: function () {
-        var bufferDuration = this.buffer.duration;
+        if (this.buffer) {
+          var bufferDuration = this.buffer.duration;
 
-        if (this.buffer.wrapAroundExtention) bufferDuration -= this.buffer.wrapAroundExtention;
+          if (this.wrapAroundExtension) bufferDuration -= this.wrapAroundExtension;
 
-        return bufferDuration;
+          return bufferDuration;
+        }
+
+        return 0;
       }
     },
     currentPosition: {
@@ -10298,6 +12788,10 @@ var GranularEngine = (function (_TimeEngine) {
       // TimeEngine attribute
 
       get: function () {
+        var master = this.master;
+
+        if (master && master.currentPosition !== undefined) return master.currentPosition;
+
         return this.position;
       }
     },
@@ -10306,31 +12800,8 @@ var GranularEngine = (function (_TimeEngine) {
       // TimeEngine method (scheduled interface)
 
       value: function advanceTime(time) {
+        time = Math.max(time, this.audioContext.currentTime);
         return time + this.trigger(time);
-      }
-    },
-    playbackLength: {
-      get: function () {
-        return this.bufferDuration;
-      }
-    },
-    gain: {
-
-      /**
-       * Set gain
-       * @param {Number} value linear gain factor
-       */
-
-      set: function (value) {
-        this.__gainNode.gain.value = value;
-      },
-
-      /**
-       * Get gain
-       * @return {Number} current gain
-       */
-      get: function () {
-        return this.__gainNode.gain.value;
       }
     },
     trigger: {
@@ -10345,8 +12816,6 @@ var GranularEngine = (function (_TimeEngine) {
        */
 
       value: function trigger(time) {
-        var outputNode = arguments[1] === undefined ? this.outputNode : arguments[1];
-
         var audioContext = this.audioContext;
         var grainTime = time || audioContext.currentTime;
         var grainPeriod = this.periodAbs;
@@ -10397,7 +12866,7 @@ var GranularEngine = (function (_TimeEngine) {
           // make grain
           if (this.gain > 0 && grainDuration >= 0.001) {
             // make grain envelope
-            var envelopeNode = audioContext.createGain();
+            var envelope = audioContext.createGain();
             var attack = this.attackAbs + this.attackRel * grainDuration;
             var release = this.releaseAbs + this.releaseRel * grainDuration;
 
@@ -10411,30 +12880,32 @@ var GranularEngine = (function (_TimeEngine) {
             var grainEndTime = grainTime + grainDuration;
             var releaseStartTime = grainEndTime - release;
 
+            envelope.gain.value = 0;
+
             if (this.attackShape === "lin") {
-              envelopeNode.gain.setValueAtTime(0, grainTime);
-              envelopeNode.gain.linearRampToValueAtTime(1, attackEndTime);
+              envelope.gain.setValueAtTime(0, grainTime);
+              envelope.gain.linearRampToValueAtTime(this.gain, attackEndTime);
             } else {
-              envelopeNode.gain.setValueAtTime(this.expRampOffset, grainTime);
-              envelopeNode.gain.exponentialRampToValueAtTime(1, attackEndTime);
+              envelope.gain.setValueAtTime(this.expRampOffset, grainTime);
+              envelope.gain.exponentialRampToValueAtTime(this.gain, attackEndTime);
             }
 
-            if (releaseStartTime > attackEndTime) envelopeNode.gain.setValueAtTime(1, releaseStartTime);
+            if (releaseStartTime > attackEndTime) envelope.gain.setValueAtTime(this.gain, releaseStartTime);
 
             if (this.releaseShape === "lin") {
-              envelopeNode.gain.linearRampToValueAtTime(0, grainEndTime);
+              envelope.gain.linearRampToValueAtTime(0, grainEndTime);
             } else {
-              envelopeNode.gain.exponentialRampToValueAtTime(this.expRampOffset, grainEndTime);
+              envelope.gain.exponentialRampToValueAtTime(this.expRampOffset, grainEndTime);
             }
 
-            envelopeNode.connect(outputNode);
+            envelope.connect(this.outputNode);
 
             // make source
             var source = audioContext.createBufferSource();
 
             source.buffer = this.buffer;
             source.playbackRate.value = resamplingRate;
-            source.connect(envelopeNode);
+            source.connect(envelope);
 
             source.start(grainTime, grainPosition);
             source.stop(grainTime + grainDuration / resamplingRate);
@@ -10447,16 +12918,11 @@ var GranularEngine = (function (_TimeEngine) {
   });
 
   return GranularEngine;
-})(TimeEngine);
+})(AudioTimeEngine);
 
 module.exports = GranularEngine;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE audio granular synthesis engine
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
 
-},{"../core/time-engine":69,"babel-runtime/core-js":80,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82,"babel-runtime/helpers/get":83,"babel-runtime/helpers/inherits":84}],71:[function(require,module,exports){
+},{"../core/audio-time-engine":80,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],83:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -10469,9 +12935,15 @@ var _createClass = require("babel-runtime/helpers/create-class")["default"];
 
 var _core = require("babel-runtime/core-js")["default"];
 
-var TimeEngine = require("../core/time-engine");
+var AudioTimeEngine = require("../core/audio-time-engine");
 
-var Metronome = (function (_TimeEngine) {
+function optOrDef(opt, def) {
+  if (opt !== undefined) {
+    return opt;
+  }return def;
+}
+
+var Metronome = (function (_AudioTimeEngine) {
   function Metronome() {
     var options = arguments[0] === undefined ? {} : arguments[0];
 
@@ -10480,38 +12952,39 @@ var Metronome = (function (_TimeEngine) {
     _get(_core.Object.getPrototypeOf(Metronome.prototype), "constructor", this).call(this, options.audioContext);
 
     /**
-     * Metronome period in sec
+     * Metronome period
      * @type {Number}
      */
-    this.period = options.period || 1;
+    this.__period = optOrDef(options.period, 1);
 
     /**
      * Metronome click frequency
      * @type {Number}
      */
-    this.clickFreq = options.clickFreq || 600;
+    this.clickFreq = optOrDef(options.clickFreq, 600);
 
     /**
      * Metronome click attack time
      * @type {Number}
      */
-    this.clickAttack = options.clickAttack || 0.002;
+    this.clickAttack = optOrDef(options.clickAttack, 0.002);
 
     /**
      * Metronome click release time
      * @type {Number}
      */
-    this.clickRelease = options.clickRelease || 0.098;
+    this.clickRelease = optOrDef(options.clickRelease, 0.098);
 
+    this.__lastTime = 0;
     this.__phase = 0;
 
     this.__gainNode = this.audioContext.createGain();
-    this.__gainNode.gain.value = options.gain || 1;
+    this.__gainNode.gain.value = optOrDef(options.gain, 1);
 
     this.outputNode = this.__gainNode;
   }
 
-  _inherits(Metronome, _TimeEngine);
+  _inherits(Metronome, _AudioTimeEngine);
 
   _createClass(Metronome, {
     advanceTime: {
@@ -10520,7 +12993,8 @@ var Metronome = (function (_TimeEngine) {
 
       value: function advanceTime(time) {
         this.trigger(time);
-        return time + this.period;
+        this.__lastTime = time;
+        return time + this.__period;
       }
     },
     syncPosition: {
@@ -10528,11 +13002,15 @@ var Metronome = (function (_TimeEngine) {
       // TimeEngine method (transported interface)
 
       value: function syncPosition(time, position, speed) {
-        var nextPosition = (Math.floor(position / this.period) + this.__phase) * this.period;
+        if (this.__period > 0) {
+          var nextPosition = (Math.floor(position / this.__period) + this.__phase) * this.__period;
 
-        if (speed > 0 && nextPosition < position) nextPosition += this.period;else if (speed < 0 && nextPosition > position) nextPosition -= this.period;
+          if (speed > 0 && nextPosition < position) nextPosition += this.__period;else if (speed < 0 && nextPosition > position) nextPosition -= this.__period;
 
-        return nextPosition;
+          return nextPosition;
+        }
+
+        return Infinity;
       }
     },
     advancePosition: {
@@ -10543,8 +13021,8 @@ var Metronome = (function (_TimeEngine) {
         this.trigger(time);
 
         if (speed < 0) {
-          return position - this.period;
-        }return position + this.period;
+          return position - this.__period;
+        }return position + this.__period;
       }
     },
     trigger: {
@@ -10558,27 +13036,20 @@ var Metronome = (function (_TimeEngine) {
         var audioContext = this.audioContext;
         var clickAttack = this.clickAttack;
         var clickRelease = this.clickRelease;
-        var period = this.period;
 
-        if (period < clickAttack + clickRelease) {
-          var scale = period / (clickAttack + clickRelease);
-          clickAttack *= scale;
-          clickRelease *= scale;
-        }
+        var env = audioContext.createGain();
+        env.gain.value = 0;
+        env.gain.setValueAtTime(0, time);
+        env.gain.linearRampToValueAtTime(1, time + clickAttack);
+        env.gain.exponentialRampToValueAtTime(1e-7, time + clickAttack + clickRelease);
+        env.gain.setValueAtTime(0, time);
+        env.connect(this.outputNode);
 
-        this.__envNode = audioContext.createGain();
-        this.__envNode.gain.value = 0;
-        this.__envNode.gain.setValueAtTime(0, time);
-        this.__envNode.gain.linearRampToValueAtTime(1, time + clickAttack);
-        this.__envNode.gain.exponentialRampToValueAtTime(1e-7, time + clickAttack + clickRelease);
-        this.__envNode.gain.setValueAtTime(0, time);
-        this.__envNode.connect(this.__gainNode);
-
-        this.__osc = audioContext.createOscillator();
-        this.__osc.frequency.value = this.clickFreq;
-        this.__osc.start(0);
-        this.__osc.stop(time + clickAttack + clickRelease);
-        this.__osc.connect(this.__envNode);
+        var osc = audioContext.createOscillator();
+        osc.frequency.value = this.clickFreq;
+        osc.start(time);
+        osc.stop(time + clickAttack + clickRelease);
+        osc.connect(env);
       }
     },
     gain: {
@@ -10600,16 +13071,44 @@ var Metronome = (function (_TimeEngine) {
         return this.__gainNode.gain.value;
       }
     },
+    period: {
+
+      /**
+       * Set period parameter
+       * @param {Number} period metronome period
+       */
+
+      set: function (period) {
+        this.__period = period;
+
+        var master = this.master;
+
+        if (master) {
+          if (master.resetEngineTime) master.resetEngineTime(this, this.__lastTime + period);else if (master.resetEnginePosition) master.resetEnginePosition(this);
+        }
+      },
+
+      /**
+       * Get period parameter
+       * @return {Number} value of period parameter
+       */
+      get: function () {
+        return this.__period;
+      }
+    },
     phase: {
 
       /**
-       * Set phase parameter
-       * @param {Number} phase metronome phase (0...1)
+       * Set phase parameter (available only when 'transported')
+       * @param {Number} phase metronome phase [0, 1[
        */
 
       set: function (phase) {
         this.__phase = phase - Math.floor(phase);
-        this.resetNextPosition();
+
+        var master = this.master;
+
+        if (master && master.resetEnginePosition !== undefined) master.resetEnginePosition(this);
       },
 
       /**
@@ -10623,16 +13122,11 @@ var Metronome = (function (_TimeEngine) {
   });
 
   return Metronome;
-})(TimeEngine);
+})(AudioTimeEngine);
 
 module.exports = Metronome;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE audio metronome engine
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
 
-},{"../core/time-engine":69,"babel-runtime/core-js":80,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82,"babel-runtime/helpers/get":83,"babel-runtime/helpers/inherits":84}],72:[function(require,module,exports){
+},{"../core/audio-time-engine":80,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],84:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -10645,9 +13139,15 @@ var _createClass = require("babel-runtime/helpers/create-class")["default"];
 
 var _core = require("babel-runtime/core-js")["default"];
 
-var TimeEngine = require("../core/time-engine");
+var AudioTimeEngine = require("../core/audio-time-engine");
 
-var PlayerEngine = (function (_TimeEngine) {
+function optOrDef(opt, def) {
+  if (opt !== undefined) {
+    return opt;
+  }return def;
+}
+
+var PlayerEngine = (function (_AudioTimeEngine) {
   function PlayerEngine() {
     var options = arguments[0] === undefined ? {} : arguments[0];
 
@@ -10661,31 +13161,30 @@ var PlayerEngine = (function (_TimeEngine) {
      * Audio buffer
      * @type {AudioBuffer}
      */
-    this.buffer = options.buffer || null;
+    this.buffer = optOrDef(options.buffer, null);
 
     /**
      * Fade time for chaining segments (e.g. in start, stop, and seek)
      * @type {AudioBuffer}
      */
-    this.fadeTime = 0.005;
+    this.fadeTime = optOrDef(options.fadeTime, 0.005);
 
     this.__time = 0;
     this.__position = 0;
     this.__speed = 0;
-    this.__cyclic = false;
 
     this.__bufferSource = null;
     this.__envNode = null;
 
-    this.__playingSpeed = 1;
-
     this.__gainNode = this.audioContext.createGain();
-    this.__gainNode.gain.value = options.gain || 1;
+    this.__gainNode.gain.value = optOrDef(options.gain, 1);
+
+    this.__cyclic = optOrDef(options.cyclic, false);
 
     this.outputNode = this.__gainNode;
   }
 
-  _inherits(PlayerEngine, _TimeEngine);
+  _inherits(PlayerEngine, _AudioTimeEngine);
 
   _createClass(PlayerEngine, {
     __start: {
@@ -10694,8 +13193,6 @@ var PlayerEngine = (function (_TimeEngine) {
 
         if (this.buffer) {
           var bufferDuration = this.buffer.duration;
-
-          if (this.buffer.wrapAroundExtension) bufferDuration -= this.buffer.wrapAroundExtension;
 
           if (this.__cyclic && (position < 0 || position >= bufferDuration)) {
             var phase = position / bufferDuration;
@@ -10793,8 +13290,7 @@ var PlayerEngine = (function (_TimeEngine) {
        */
 
       set: function (value) {
-        var time = this.__sync();
-
+        var time = this.currentTime;
         this.__gainNode.cancelScheduledValues(time);
         this.__gainNode.setValueAtTime(this.__gainNode.gain.value, time);
         this.__gainNode.linearRampToValueAtTime(0, time + this.fadeTime);
@@ -10807,20 +13303,28 @@ var PlayerEngine = (function (_TimeEngine) {
       get: function () {
         return this.__gainNode.gain.value;
       }
+    },
+    bufferDuration: {
+
+      /**
+       * Get buffer duration
+       * @return {Number} current buffer duration
+       */
+
+      get: function () {
+        if (this.buffer) return this.buffer.duration;
+
+        return 0;
+      }
     }
   });
 
   return PlayerEngine;
-})(TimeEngine);
+})(AudioTimeEngine);
 
 module.exports = PlayerEngine;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE audio player engine
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
 
-},{"../core/time-engine":69,"babel-runtime/core-js":80,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82,"babel-runtime/helpers/get":83,"babel-runtime/helpers/inherits":84}],73:[function(require,module,exports){
+},{"../core/audio-time-engine":80,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],85:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -10833,7 +13337,13 @@ var _createClass = require("babel-runtime/helpers/create-class")["default"];
 
 var _core = require("babel-runtime/core-js")["default"];
 
-var TimeEngine = require("../core/time-engine");
+var AudioTimeEngine = require("../core/audio-time-engine");
+
+function optOrDef(opt, def) {
+  if (opt !== undefined) {
+    return opt;
+  }return def;
+}
 
 function getCurrentOrPreviousIndex(sortedArray, value) {
   var index = arguments[2] === undefined ? 0 : arguments[2];
@@ -10881,7 +13391,7 @@ function getCurrentOrNextIndex(sortedArray, value) {
  * @class SegmentEngine
  */
 
-var SegmentEngine = (function (_TimeEngine) {
+var SegmentEngine = (function (_AudioTimeEngine) {
   /**
    * @constructor
    * @param {AudioBuffer} buffer initial audio buffer for granular synthesis
@@ -10903,55 +13413,55 @@ var SegmentEngine = (function (_TimeEngine) {
      * Audio buffer
      * @type {AudioBuffer}
      */
-    this.buffer = options.buffer || null;
+    this.buffer = optOrDef(options.buffer, null);
 
     /**
      * Absolute segment period in sec
      * @type {Number}
      */
-    this.periodAbs = options.periodAbs || 0.1;
+    this.periodAbs = optOrDef(options.periodAbs, 0);
 
     /**
      * Segment period relative to inter-segment distance
      * @type {Number}
      */
-    this.periodRel = options.periodRel || 0;
+    this.periodRel = optOrDef(options.periodRel, 1);
 
     /**
      * Amout of random segment period variation relative to segment period
      * @type {Number}
      */
-    this.periodVar = options.periodVar || 0;
+    this.periodVar = optOrDef(options.periodVar, 0);
 
     /**
      * Array of segment positions (onset times in audio buffer) in sec
      * @type {Number}
      */
-    this.positionArray = options.positionArray || [0];
+    this.positionArray = optOrDef(options.positionArray, [0]);
 
     /**
      * Amout of random segment position variation in sec
      * @type {Number}
      */
-    this.positionVar = options.positionVar || 0;
+    this.positionVar = optOrDef(options.positionVar, 0);
 
     /**
      * Array of segment durations in sec
      * @type {Number}
      */
-    this.durationArray = options.durationArray || [0];
+    this.durationArray = optOrDef(options.durationArray, [0]);
 
     /**
      * Absolute segment duration in sec
      * @type {Number}
      */
-    this.durationAbs = options.durationAbs || 0;
+    this.durationAbs = optOrDef(options.durationAbs, 0);
 
     /**
      * Segment duration relative to given segment duration or inter-segment distance
      * @type {Number}
      */
-    this.durationRel = options.durationRel || 1;
+    this.durationRel = optOrDef(options.durationRel, 1);
 
     /**
      * Array of segment offsets in sec
@@ -10960,98 +13470,118 @@ var SegmentEngine = (function (_TimeEngine) {
      * offset > 0: the segment's reference position is after the given segment position
      * offset < 0: the given segment position is the segment's reference position and the duration has to be corrected by the offset
      */
-    this.offsetArray = options.offsetArray || [0];
+    this.offsetArray = optOrDef(options.offsetArray, [0]);
 
     /**
      * Absolute segment offset in sec
      * @type {Number}
      */
-    this.offsetAbs = options.offsetAbs || -0.005;
+    this.offsetAbs = optOrDef(options.offsetAbs, -0.005);
 
     /**
      * Segment offset relative to segment duration
      * @type {Number}
      */
-    this.offsetRel = options.offsetRel || 0;
+    this.offsetRel = optOrDef(options.offsetRel, 0);
 
     /**
      * Time by which all segments are delayed (especially to realize segment offsets)
      * @type {Number}
      */
-    this.delay = options.delay || 0.005;
+    this.delay = optOrDef(options.delay, 0.005);
 
     /**
      * Absolute attack time in sec
      * @type {Number}
      */
-    this.attackAbs = options.attackAbs || 0.005;
+    this.attackAbs = optOrDef(options.attackAbs, 0.005);
 
     /**
      * Attack time relative to segment duration
      * @type {Number}
      */
-    this.attackRel = options.attackRel || 0;
+    this.attackRel = optOrDef(options.attackRel, 0);
 
     /**
      * Absolute release time in sec
      * @type {Number}
      */
-    this.releaseAbs = options.releaseAbs || 0.005;
+    this.releaseAbs = optOrDef(options.releaseAbs, 0.005);
 
     /**
      * Release time relative to segment duration
      * @type {Number}
      */
-    this.releaseRel = options.releaseRel || 0;
+    this.releaseRel = optOrDef(options.releaseRel, 0);
 
     /**
      * Segment resampling in cent
      * @type {Number}
      */
-    this.resampling = options.resampling || 0;
+    this.resampling = optOrDef(options.resampling, 0);
 
     /**
      * Amout of random resampling variation in cent
      * @type {Number}
      */
-    this.resamplingVar = options.resamplingVar || 0;
+    this.resamplingVar = optOrDef(options.resamplingVar, 0);
 
     /**
-     * Index of
+     * Linear gain factor
      * @type {Number}
      */
-    this.segmentIndex = options.segmentIndex || 0;
+    this.gain = optOrDef(options.gain, 1);
+
+    /**
+     * Index of the segment to synthesize (i.e. of this.positionArray/durationArray/offsetArray)
+     * @type {Number}
+     */
+    this.segmentIndex = optOrDef(options.segmentIndex, 0);
 
     /**
      * Whether the audio buffer and segment indices are considered as cyclic
      * @type {Bool}
      */
-    this.cyclic = options.cyclic || false;
+    this.cyclic = optOrDef(options.cyclic, false);
     this.__cyclicOffset = 0;
 
-    this.__gainNode = this.audioContext.createGain();
-    this.__gainNode.gain.value = options.gain || 1;
+    /**
+     * Portion at the end of the audio buffer that has been copied from the beginning to assure cyclic behavior
+     * @type {Number}
+     */
+    this.wrapAroundExtension = optOrDef(options.wrapAroundExtension, 0);
 
-    this.outputNode = this.__gainNode;
+    this.outputNode = this.audioContext.createGain();
   }
 
-  _inherits(SegmentEngine, _TimeEngine);
+  _inherits(SegmentEngine, _AudioTimeEngine);
 
   _createClass(SegmentEngine, {
     bufferDuration: {
+
+      /**
+       * Get buffer duration (excluding wrapAroundExtension)
+       * @return {Number} current buffer duration
+       */
+
       get: function () {
-        var bufferDuration = this.buffer.duration;
+        if (this.buffer) {
+          var bufferDuration = this.buffer.duration;
 
-        if (this.buffer.wrapAroundExtention) bufferDuration -= this.buffer.wrapAroundExtention;
+          if (this.wrapAroundExtension) bufferDuration -= this.wrapAroundExtension;
 
-        return bufferDuration;
+          return bufferDuration;
+        }
+
+        return 0;
       }
     },
     advanceTime: {
 
       // TimeEngine method (transported interface)
 
-      value: function advanceTime(time, position, speed) {
+      value: function advanceTime(time) {
+        time = Math.max(time, this.audioContext.currentTime);
         return time + this.trigger(time);
       }
     },
@@ -11143,39 +13673,20 @@ var SegmentEngine = (function (_TimeEngine) {
         return cyclicOffset + this.positionArray[index];
       }
     },
-    gain: {
-
-      /**
-       * Set gain
-       * @param {Number} value linear gain factor
-       */
-
-      set: function (value) {
-        this.__gainNode.gain.value = value;
-      },
-
-      /**
-       * Get gain
-       * @return {Number} current gain
-       */
-      get: function () {
-        return this.__gainNode.gain.value;
-      }
-    },
     trigger: {
 
       /**
        * Trigger a segment
-       * @param {Number} audioTime segment synthesis audio time
+       * @param {Number} time segment synthesis audio time
        * @return {Number} period to next segment
        *
        * This function can be called at any time (whether the engine is scheduled/transported or not)
        * to generate a single segment according to the current segment parameters.
        */
 
-      value: function trigger(audioTime) {
+      value: function trigger(time) {
         var audioContext = this.audioContext;
-        var segmentTime = audioTime || audioContext.currentTime + this.delay;
+        var segmentTime = (time || audioContext.currentTime) + this.delay;
         var segmentPeriod = this.periodAbs;
         var segmentIndex = this.segmentIndex;
 
@@ -11268,7 +13779,7 @@ var SegmentEngine = (function (_TimeEngine) {
           // make segment
           if (this.gain > 0 && segmentDuration > 0) {
             // make segment envelope
-            var envelopeNode = audioContext.createGain();
+            var envelope = audioContext.createGain();
             var attack = this.attackAbs + this.attackRel * segmentDuration;
             var release = this.releaseAbs + this.releaseRel * segmentDuration;
 
@@ -11282,23 +13793,20 @@ var SegmentEngine = (function (_TimeEngine) {
             var segmentEndTime = segmentTime + segmentDuration;
             var releaseStartTime = segmentEndTime - release;
 
-            envelopeNode.gain.value = this.gain;
+            envelope.gain.setValueAtTime(0, segmentTime);
+            envelope.gain.linearRampToValueAtTime(this.gain, attackEndTime);
 
-            envelopeNode.gain.setValueAtTime(0, segmentTime);
-            envelopeNode.gain.linearRampToValueAtTime(this.gain, attackEndTime);
+            if (releaseStartTime > attackEndTime) envelope.gain.setValueAtTime(this.gain, releaseStartTime);
 
-            if (releaseStartTime > attackEndTime) envelopeNode.gain.setValueAtTime(this.gain, releaseStartTime);
-
-            envelopeNode.gain.linearRampToValueAtTime(0, segmentEndTime);
-            envelopeNode.connect(this.__gainNode);
+            envelope.gain.linearRampToValueAtTime(0, segmentEndTime);
+            envelope.connect(this.outputNode);
 
             // make source
             var source = audioContext.createBufferSource();
 
             source.buffer = this.buffer;
             source.playbackRate.value = resamplingRate;
-            source.connect(envelopeNode);
-            envelopeNode.connect(this.__gainNode);
+            source.connect(envelope);
 
             source.start(segmentTime, segmentPosition);
             source.stop(segmentTime + segmentDuration / resamplingRate);
@@ -11311,25 +13819,21 @@ var SegmentEngine = (function (_TimeEngine) {
   });
 
   return SegmentEngine;
-})(TimeEngine);
+})(AudioTimeEngine);
 
 module.exports = SegmentEngine;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE audio sound segment engine
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
 
-},{"../core/time-engine":69,"babel-runtime/core-js":80,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82,"babel-runtime/helpers/get":83,"babel-runtime/helpers/inherits":84}],74:[function(require,module,exports){
+},{"../core/audio-time-engine":80,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],86:[function(require,module,exports){
 "use strict";
 
 var _core = require("babel-runtime/core-js")["default"];
 
 // schedulers should be singletons
+var defaultAudioContext = require("../core/audio-context");
 var Scheduler = require("./scheduler");
 var SimpleScheduler = require("./simple-scheduler");
-var defaultAudioContext = require("../core/audio-context");
 var schedulerMap = new _core.WeakMap();
+var simpleSchedulerMap = new _core.WeakMap();
 
 // scheduler factory
 module.exports.getScheduler = function () {
@@ -11340,8 +13844,6 @@ module.exports.getScheduler = function () {
   if (!scheduler) {
     scheduler = new Scheduler({ audioContext: audioContext });
     schedulerMap.set(audioContext, scheduler);
-  } else if (scheduler instanceof SimpleScheduler) {
-    throw new Error("Scheduler type mismatch for audio context " + audioContext);
   }
 
   return scheduler;
@@ -11350,19 +13852,17 @@ module.exports.getScheduler = function () {
 module.exports.getSimpleScheduler = function () {
   var audioContext = arguments[0] === undefined ? defaultAudioContext : arguments[0];
 
-  var simpleScheduler = schedulerMap.get(audioContext);
+  var simpleScheduler = simpleSchedulerMap.get(audioContext);
 
   if (!simpleScheduler) {
     simpleScheduler = new SimpleScheduler({ audioContext: audioContext });
-    schedulerMap.set(audioContext, simpleScheduler);
-  } else if (simpleScheduler instanceof Scheduler) {
-    throw new Error("Scheduler type mismatch for audio context " + audioContext);
+    simpleSchedulerMap.set(audioContext, simpleScheduler);
   }
 
   return simpleScheduler;
 };
 
-},{"../core/audio-context":68,"./scheduler":76,"./simple-scheduler":77,"babel-runtime/core-js":80}],75:[function(require,module,exports){
+},{"../core/audio-context":79,"./scheduler":88,"./simple-scheduler":89,"babel-runtime/core-js":93}],87:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -11375,85 +13875,328 @@ var _createClass = require("babel-runtime/helpers/create-class")["default"];
 
 var _core = require("babel-runtime/core-js")["default"];
 
+var defaultAudioContext = require("../core/audio-context");
 var TimeEngine = require("../core/time-engine");
+var SchedulingQueue = require("../utils/scheduling-queue");
+var getScheduler = require("./factories").getScheduler;
 
-var _require = require("./factories");
+var LoopControl = (function (_TimeEngine) {
+  function LoopControl(playControl) {
+    _classCallCheck(this, LoopControl);
 
-var getScheduler = _require.getScheduler;
+    _get(_core.Object.getPrototypeOf(LoopControl.prototype), "constructor", this).call(this);
 
-var PlayControlSchedulerHook = (function (_TimeEngine) {
-  function PlayControlSchedulerHook(playControl) {
-    _classCallCheck(this, PlayControlSchedulerHook);
-
-    _get(_core.Object.getPrototypeOf(PlayControlSchedulerHook.prototype), "constructor", this).call(this);
     this.__playControl = playControl;
+    this.lower = -Infinity;
+    this.upper = Infinity;
   }
 
-  _inherits(PlayControlSchedulerHook, _TimeEngine);
+  _inherits(LoopControl, _TimeEngine);
 
-  _createClass(PlayControlSchedulerHook, {
-    advanceTime: {
-      value: function advanceTime(time) {
-        var playControl = this.__playControl;
-        var position = playControl.__getPositionAtTime(time);
-        var nextPosition = playControl.__engine.advancePosition(time, position, playControl.__speed);
-
-        if (nextPosition !== Infinity) {
-          return playControl.__getTimeAtPosition(nextPosition);
-        }return Infinity;
-      }
-    }
-  });
-
-  return PlayControlSchedulerHook;
-})(TimeEngine);
-
-var PlayControlLoopControl = (function (_TimeEngine2) {
-  function PlayControlLoopControl(playControl) {
-    _classCallCheck(this, PlayControlLoopControl);
-
-    _get(_core.Object.getPrototypeOf(PlayControlLoopControl.prototype), "constructor", this).call(this);
-    this.__playControl = playControl;
-    this.speed = null;
-  }
-
-  _inherits(PlayControlLoopControl, _TimeEngine2);
-
-  _createClass(PlayControlLoopControl, {
+  _createClass(LoopControl, {
     advanceTime: {
 
       // TimeEngine method (scheduled interface)
 
       value: function advanceTime(time) {
-        if (this.speed > 0) {
-          this.__playControl.syncSpeed(time, this.__playControl.__loopStart, this.speed, true);
-          return this.__playControl.__getTimeAtPosition(this.__playControl.__loopEnd);
-        } else if (this.speed < 0) {
-          this.__playControl.syncSpeed(time, this.__playControl.__loopEnd, this.speed, true);
-          return this.__playControl.__getTimeAtPosition(this.__playControl.__loopStart);
+        var playControl = this.__playControl;
+        var speed = playControl.speed;
+        var lower = this.lower;
+        var upper = this.upper;
+
+        if (speed > 0) {
+          playControl.syncSpeed(time, lower, speed, true);
+          return playControl.__getTimeAtPosition(upper);
+        } else if (speed < 0) {
+          playControl.syncSpeed(time, upper, speed, true);
+          return playControl.__getTimeAtPosition(lower);
         }
 
         return Infinity;
       }
+    },
+    reschedule: {
+      value: function reschedule(speed) {
+        var playControl = this.__playControl;
+        var lower = Math.min(playControl.__loopStart, playControl.__loopEnd);
+        var upper = Math.max(playControl.__loopStart, playControl.__loopEnd);
+
+        this.speed = speed;
+        this.lower = lower;
+        this.upper = upper;
+
+        if (lower === upper) speed = 0;
+
+        if (speed > 0) this.resetTime(playControl.__getTimeAtPosition(upper - 0.000001));else if (speed < 0) this.resetTime(playControl.__getTimeAtPosition(lower + 0.000001));else this.resetTime(Infinity);
+      }
+    },
+    applyLoopBoundaries: {
+      value: function applyLoopBoundaries(position, speed) {
+        var lower = this.lower;
+        var upper = this.upper;
+
+        if (speed > 0 && position >= upper) {
+          return lower + (position - lower) % (upper - lower);
+        } else if (speed < 0 && position < lower) {
+          return upper - (upper - position) % (upper - lower);
+        }return position;
+      }
     }
   });
 
-  return PlayControlLoopControl;
+  return LoopControl;
 })(TimeEngine);
+
+var PlayControlled = (function () {
+  function PlayControlled(playControl, engine) {
+    _classCallCheck(this, PlayControlled);
+
+    this.__playControl = playControl;
+    this.__engine = engine;
+
+    engine.master = this;
+  }
+
+  _createClass(PlayControlled, {
+    syncSpeed: {
+      value: function syncSpeed(time, position, speed, seek, lastSpeed) {
+        this.__engine.syncSpeed(time, position, speed, seek);
+      }
+    },
+    currentTime: {
+      get: function () {
+        return this.__playControl.currentTime;
+      }
+    },
+    currentPosition: {
+      get: function () {
+        return this.__playControl.currentPosition;
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.__engine.master = null;
+
+        this.__playControl = null;
+        this.__engine = null;
+      }
+    }
+  });
+
+  return PlayControlled;
+})();
+
+var PlayControlledSpeedControlled = (function (_PlayControlled) {
+  function PlayControlledSpeedControlled(playControl, engine) {
+    _classCallCheck(this, PlayControlledSpeedControlled);
+
+    _get(_core.Object.getPrototypeOf(PlayControlledSpeedControlled.prototype), "constructor", this).call(this, playControl, engine);
+  }
+
+  _inherits(PlayControlledSpeedControlled, _PlayControlled);
+
+  return PlayControlledSpeedControlled;
+})(PlayControlled);
+
+var TransportedSchedulerHook = (function (_TimeEngine2) {
+  function TransportedSchedulerHook(playControl, engine) {
+    _classCallCheck(this, TransportedSchedulerHook);
+
+    _get(_core.Object.getPrototypeOf(TransportedSchedulerHook.prototype), "constructor", this).call(this);
+
+    this.__playControl = playControl;
+    this.__engine = engine;
+
+    this.__nextPosition = Infinity;
+    playControl.__scheduler.add(this, Infinity);
+  }
+
+  _inherits(TransportedSchedulerHook, _TimeEngine2);
+
+  _createClass(TransportedSchedulerHook, {
+    advanceTime: {
+      value: function advanceTime(time) {
+        var playControl = this.__playControl;
+        var engine = this.__engine;
+        var position = this.__nextPosition;
+        var nextPosition = engine.advancePosition(time, position, playControl.__speed);
+        var nextTime = playControl.__getTimeAtPosition(nextPosition);
+
+        while (nextTime <= time) {
+          nextPosition = engine.advancePosition(time, position, playControl.__speed);
+          nextTime = playControl.__getTimeAtPosition(nextPosition);
+        }
+
+        this.__nextPosition = nextPosition;
+        return nextTime;
+      }
+    },
+    resetPosition: {
+      value: function resetPosition() {
+        var position = arguments[0] === undefined ? this.__nextPosition : arguments[0];
+
+        var time = this.__playControl.__getTimeAtPosition(position);
+        this.__nextPosition = position;
+        this.resetTime(time);
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.__playControl.__scheduler.remove(this);
+
+        this.__playControl = null;
+        this.__engine = null;
+      }
+    }
+  });
+
+  return TransportedSchedulerHook;
+})(TimeEngine);
+
+var PlayControlledTransported = (function (_PlayControlled2) {
+  function PlayControlledTransported(playControl, engine) {
+    _classCallCheck(this, PlayControlledTransported);
+
+    _get(_core.Object.getPrototypeOf(PlayControlledTransported.prototype), "constructor", this).call(this, playControl, engine);
+
+    this.__schedulerHook = new TransportedSchedulerHook(playControl, engine);
+  }
+
+  _inherits(PlayControlledTransported, _PlayControlled2);
+
+  _createClass(PlayControlledTransported, {
+    syncSpeed: {
+      value: function syncSpeed(time, position, speed, seek, lastSpeed) {
+        var nextPosition = this.__nextPosition;
+
+        if (seek) {
+          nextPosition = this.__engine.syncPosition(time, position, speed);
+        } else if (lastSpeed === 0) {
+          // start
+          nextPosition = this.__engine.syncPosition(time, position, speed);
+        } else if (speed === 0) {
+          // stop
+          nextPosition = Infinity;
+
+          if (this.__engine.syncSpeed) this.__engine.syncSpeed(time, position, 0);
+        } else if (speed * lastSpeed < 0) {
+          // change transport direction
+          nextPosition = this.__engine.syncPosition(time, position, speed);
+        } else if (this.__engine.syncSpeed) {
+          // change speed
+          this.__engine.syncSpeed(time, position, speed);
+        }
+
+        this.__schedulerHook.resetPosition(nextPosition);
+      }
+    },
+    resetEnginePosition: {
+      value: function resetEnginePosition(engine) {
+        var position = arguments[1] === undefined ? undefined : arguments[1];
+
+        if (position === undefined) {
+          var playControl = this.__playControl;
+          var time = playControl.__sync();
+
+          position = this.__engine.syncPosition(time, playControl.__position, playControl.__speed);
+        }
+
+        this.__schedulerHook.resetPosition(position);
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.__schedulerHook.destroy();
+        this.__schedulerHook = null;
+
+        _get(_core.Object.getPrototypeOf(PlayControlledTransported.prototype), "destroy", this).call(this);
+      }
+    }
+  });
+
+  return PlayControlledTransported;
+})(PlayControlled);
+
+var ScheduledSchedulingQueue = (function (_SchedulingQueue) {
+  function ScheduledSchedulingQueue(playControl, engine) {
+    _classCallCheck(this, ScheduledSchedulingQueue);
+
+    _get(_core.Object.getPrototypeOf(ScheduledSchedulingQueue.prototype), "constructor", this).call(this);
+    this.__playControl = playControl;
+    this.__engine = engine;
+
+    this.add(engine, Infinity);
+    playControl.__scheduler.add(this, Infinity);
+  }
+
+  _inherits(ScheduledSchedulingQueue, _SchedulingQueue);
+
+  _createClass(ScheduledSchedulingQueue, {
+    currentTime: {
+      get: function () {
+        return this.__playControl.currentTime;
+      }
+    },
+    currentPosition: {
+      get: function () {
+        return this.__playControl.currentPosition;
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.__playControl.__scheduler.remove(this);
+        this.remove(this.__engine);
+
+        this.__playControl = null;
+        this.__engine = null;
+      }
+    }
+  });
+
+  return ScheduledSchedulingQueue;
+})(SchedulingQueue);
+
+var PlayControlledScheduled = (function (_PlayControlled3) {
+  function PlayControlledScheduled(playControl, engine) {
+    _classCallCheck(this, PlayControlledScheduled);
+
+    _get(_core.Object.getPrototypeOf(PlayControlledScheduled.prototype), "constructor", this).call(this, playControl, engine);
+    this.__schedulingQueue = new ScheduledSchedulingQueue(playControl, engine);
+  }
+
+  _inherits(PlayControlledScheduled, _PlayControlled3);
+
+  _createClass(PlayControlledScheduled, {
+    syncSpeed: {
+      value: function syncSpeed(time, position, speed, seek, lastSpeed) {
+        if (lastSpeed === 0 && speed !== 0) // start or seek
+          this.__engine.resetTime();else if (lastSpeed !== 0 && speed === 0) // stop
+          this.__engine.resetTime(Infinity);
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.__schedulingQueue.destroy();
+        _get(_core.Object.getPrototypeOf(PlayControlledScheduled.prototype), "destroy", this).call(this);
+      }
+    }
+  });
+
+  return PlayControlledScheduled;
+})(PlayControlled);
 
 var PlayControl = (function (_TimeEngine3) {
   function PlayControl(engine) {
-    var _this = this;
+    var options = arguments[1] === undefined ? {} : arguments[1];
 
     _classCallCheck(this, PlayControl);
 
-    _get(_core.Object.getPrototypeOf(PlayControl.prototype), "constructor", this).call(this, engine.audioContext);
+    _get(_core.Object.getPrototypeOf(PlayControl.prototype), "constructor", this).call(this);
 
-    this.scheduler = getScheduler(engine.audioContext);
+    this.audioContext = options.audioContext || defaultAudioContext;
+    this.__scheduler = getScheduler(this.audioContext);
 
-    this.__engine = null;
-    this.__interface = null;
-    this.__schedulerHook = null;
+    this.__playControlled = null;
 
     this.__loopControl = null;
     this.__loopStart = 0;
@@ -11464,63 +14207,32 @@ var PlayControl = (function (_TimeEngine3) {
     this.__position = 0;
     this.__speed = 0;
 
-    this.__nextPosition = Infinity;
-
     // non-zero "user" speed
     this.__playingSpeed = 1;
 
-    if (engine.master) throw new Error("object has already been added to a master");
-
-    var speed = this.__speed;
-
-    var getCurrentTime = function () {
-      return _this.currentTime;
-    };
-
-    var getCurrentPosition = function () {
-      return _this.currentPosition;
-    };
-
-    if (engine.implementsSpeedControlled()) {
-      // add time engine that implements speed-controlled interface
-      this.__engine = engine;
-      this.__interface = "speed-controlled";
-      engine.setSpeedControlled(this, getCurrentTime, getCurrentPosition);
-    } else if (engine.implementsTransported()) {
-      // add time engine that implements transported interface
-      this.__engine = engine;
-      this.__interface = "transported";
-
-      engine.setTransported(this, 0, function () {
-        var nextEnginePosition = arguments[0] === undefined ? null : arguments[0];
-
-        // resetNextPosition
-        if (nextEnginePosition === null) {
-          var time = _this.scheduler.currentTime;
-          var position = _this.__getPositionAtTime(time);
-          nextEnginePosition = engine.syncPosition(time, position, _this.__speed);
-        }
-
-        _this.__resetNextPosition(nextEnginePosition);
-      }, getCurrentTime, getCurrentPosition);
-    } else if (engine.implementsScheduled()) {
-      // add time engine that implements scheduled interface
-      this.__engine = engine;
-      this.__interface = "scheduled";
-
-      this.scheduler.add(engine, Infinity, getCurrentPosition);
-    } else {
-      throw new Error("object cannot be added to play control");
-    }
+    if (engine) this.__setEngine(engine);
   }
 
   _inherits(PlayControl, _TimeEngine3);
 
   _createClass(PlayControl, {
+    __setEngine: {
+      value: function __setEngine(engine) {
+        if (engine.master) throw new Error("object has already been added to a master");
+
+        if (engine.implementsSpeedControlled()) this.__playControlled = new PlayControlledSpeedControlled(this, engine);else if (engine.implementsTransported()) this.__playControlled = new PlayControlledTransported(this, engine);else if (engine.implementsScheduled()) this.__playControlled = new PlayControlledScheduled(this, engine);else throw new Error("object cannot be added to play control");
+      }
+    },
+    __resetEngine: {
+      value: function __resetEngine() {
+        this.__playControlled.destroy();
+        this.__playControlled = null;
+      }
+    },
     __getTimeAtPosition: {
 
       /**
-       * Extrapolate transport time for given position
+       * Calculate/extrapolate playing time for given position
        * @param {Number} position position
        * @return {Number} extrapolated time
        */
@@ -11532,7 +14244,7 @@ var PlayControl = (function (_TimeEngine3) {
     __getPositionAtTime: {
 
       /**
-       * Extrapolate playing position for given time
+       * Calculate/extrapolate playing position for given time
        * @param {Number} time time
        * @return {Number} extrapolated position
        */
@@ -11549,19 +14261,6 @@ var PlayControl = (function (_TimeEngine3) {
         return now;
       }
     },
-    __resetNextPosition: {
-
-      /**
-       * Get current master position
-       * @return {Number} current playing position
-       */
-
-      value: function __resetNextPosition(nextPosition) {
-        if (this.__schedulerHook) this.__schedulerHook.resetNextTime(this.__getTimeAtPosition(nextPosition));
-
-        this.__nextPosition = nextPosition;
-      }
-    },
     currentTime: {
 
       /**
@@ -11572,7 +14271,7 @@ var PlayControl = (function (_TimeEngine3) {
        */
 
       get: function () {
-        return this.scheduler.currentTime;
+        return this.__scheduler.currentTime;
       }
     },
     currentPosition: {
@@ -11585,21 +14284,41 @@ var PlayControl = (function (_TimeEngine3) {
        */
 
       get: function () {
-        return this.__position + (this.scheduler.currentTime - this.__time) * this.__speed;
+        return this.__position + (this.__scheduler.currentTime - this.__time) * this.__speed;
+      }
+    },
+    set: {
+      value: function set() {
+        var engine = arguments[0] === undefined ? null : arguments[0];
+
+        var time = this.__sync();
+        var speed = this.__speed;
+
+        if (this.__playControlled !== null && this.__playControlled.__engine !== engine) {
+
+          this.syncSpeed(time, this.__position, 0);
+
+          if (this.__playControlled) this.__resetEngine();
+
+          if (this.__playControlled === null && engine !== null) {
+            this.__setEngine(engine);
+
+            if (speed !== 0) this.syncSpeed(time, this.__position, speed);
+          }
+        }
       }
     },
     loop: {
       set: function (enable) {
-        if (enable) {
-          if (this.__loopStart > -Infinity && this.__loopEnd < Infinity) {
-            this.__loopControl = new PlayControlLoopControl(this);
-            this.scheduler.add(this.__loopControl, Infinity);
-
-            var speed = this.__speed;
-            if (speed !== 0) this.__rescheduleLoopControl(this.__position, speed);
+        if (enable && this.__loopStart > -Infinity && this.__loopEnd < Infinity) {
+          if (!this.__loopControl) {
+            this.__loopControl = new LoopControl(this);
+            this.__scheduler.add(this.__loopControl, Infinity);
           }
+
+          if (this.__speed !== 0) this.__loopControl.reschedule(this.__speed);
         } else if (this.__loopControl) {
-          this.scheduler.remove(this.__loopControl);
+          this.__scheduler.remove(this.__loopControl);
           this.__loopControl = null;
         }
       },
@@ -11608,60 +14327,27 @@ var PlayControl = (function (_TimeEngine3) {
       }
     },
     setLoopBoundaries: {
-      value: function setLoopBoundaries(start, end) {
-        if (end >= start) {
-          this.__loopStart = start;
-          this.__loopEnd = end;
-        } else {
-          this.__loopStart = end;
-          this.__loopEnd = start;
-        }
+      value: function setLoopBoundaries(loopStart, loopEnd) {
+        this.__loopStart = loopStart;
+        this.__loopEnd = loopEnd;
 
         this.loop = this.loop;
       }
     },
     loopStart: {
-      set: function (startTime) {
-        this.setLoopBoundaries(startTime, this.__loopEnd);
+      set: function (loopStart) {
+        this.setLoopBoundaries(loopStart, this.__loopEnd);
       },
       get: function () {
         return this.__loopStart;
       }
     },
     loopEnd: {
-      set: function (endTime) {
-        this.setLoopBoundaries(this.__loopStart, endTime);
+      set: function (loopEnd) {
+        this.setLoopBoundaries(this.__loopStart, loopEnd);
       },
       get: function () {
         return this.__loopEnd;
-      }
-    },
-    __applyLoopBoundaries: {
-      value: function __applyLoopBoundaries(position, speed, seek) {
-        if (this.__loopControl) {
-          if (speed > 0 && position >= this.__loopEnd) {
-            return this.__loopStart + (position - this.__loopStart) % (this.__loopEnd - this.__loopStart);
-          } else if (speed < 0 && position < this.__loopStart) {
-            return this.__loopEnd - (this.__loopEnd - position) % (this.__loopEnd - this.__loopStart);
-          }
-        }
-
-        return position;
-      }
-    },
-    __rescheduleLoopControl: {
-      value: function __rescheduleLoopControl(position, speed) {
-        if (this.__loopControl) {
-          if (speed > 0) {
-            this.__loopControl.speed = speed;
-            this.scheduler.reset(this.__loopControl, this.__getTimeAtPosition(this.__loopEnd));
-          } else if (speed < 0) {
-            this.__loopControl.speed = speed;
-            this.scheduler.reset(this.__loopControl, this.__getTimeAtPosition(this.__loopStart));
-          } else {
-            this.scheduler.reset(this.__loopControl, Infinity);
-          }
-        }
       }
     },
     syncSpeed: {
@@ -11674,56 +14360,15 @@ var PlayControl = (function (_TimeEngine3) {
         var lastSpeed = this.__speed;
 
         if (speed !== lastSpeed || seek) {
-          if (seek || lastSpeed === 0) position = this.__applyLoopBoundaries(position, speed);
+          if ((seek || lastSpeed === 0) && this.__loopControl) position = this.__loopControl.applyLoopBoundaries(position, speed);
 
           this.__time = time;
           this.__position = position;
           this.__speed = speed;
 
-          switch (this.__interface) {
-            case "speed-controlled":
-              this.__engine.syncSpeed(time, position, speed, seek);
-              break;
+          if (this.__playControlled) this.__playControlled.syncSpeed(time, position, speed, seek, lastSpeed);
 
-            case "transported":
-              var nextPosition = this.__nextPosition;
-
-              if (seek) {
-                nextPosition = this.__engine.syncPosition(time, position, speed);
-              } else if (lastSpeed === 0) {
-                // start
-                nextPosition = this.__engine.syncPosition(time, position, speed);
-
-                // add scheduler hook to scheduler (will be rescheduled to appropriate time below)
-                this.__schedulerHook = new PlayControlSchedulerHook(this);
-                this.scheduler.add(this.__schedulerHook, Infinity);
-              } else if (speed === 0) {
-                // stop
-                nextPosition = Infinity;
-
-                if (this.__engine.syncSpeed) this.__engine.syncSpeed(time, position, 0);
-
-                // remove scheduler hook from scheduler
-                this.scheduler.remove(this.__schedulerHook);
-                this.__schedulerHook = null;
-              } else if (speed * lastSpeed < 0) {
-                // change transport direction
-                nextPosition = this.__engine.syncPosition(time, position, speed);
-              } else if (this.__engine.syncSpeed) {
-                this.__engine.syncSpeed(time, position, speed);
-              }
-
-              this.__resetNextPosition(nextPosition);
-              break;
-
-            case "scheduled":
-              if (lastSpeed === 0) // start or seek
-                this.__scheduledEngine.resetNextTime(0);else if (speed === 0) // stop
-                this.__scheduledEngine.resetNextTime(Infinity);
-              break;
-          }
-
-          this.__rescheduleLoopControl(position, speed);
+          if (this.__loopControl) this.__loopControl.reschedule(speed);
         }
       }
     },
@@ -11772,9 +14417,9 @@ var PlayControl = (function (_TimeEngine3) {
         var time = this.__sync();
 
         if (speed >= 0) {
-          if (speed < 0.0625) speed = 0.0625;else if (speed > 16) speed = 16;
+          if (speed < 0.01) speed = 0.01;else if (speed > 100) speed = 100;
         } else {
-          if (speed < -16) speed = -16;else if (speed > -0.0625) speed = -0.0625;
+          if (speed < -100) speed = -100;else if (speed > -0.01) speed = -0.01;
         }
 
         this.__playingSpeed = speed;
@@ -11804,18 +14449,6 @@ var PlayControl = (function (_TimeEngine3) {
           this.syncSpeed(time, position, this.__speed, true);
         }
       }
-    },
-    clear: {
-
-      /**
-       * Remove time engine from the transport
-       */
-
-      value: function clear() {
-        var time = this.__sync();
-        this.syncSpeed(time, this.__position, 0);
-        this.__engine.resetInterface();
-      }
     }
   });
 
@@ -11823,44 +14456,34 @@ var PlayControl = (function (_TimeEngine3) {
 })(TimeEngine);
 
 module.exports = PlayControl;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE audio play control class (time-engine master), provides play control to a single engine
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
 
-},{"../core/time-engine":69,"./factories":74,"babel-runtime/core-js":80,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82,"babel-runtime/helpers/get":83,"babel-runtime/helpers/inherits":84}],76:[function(require,module,exports){
+},{"../core/audio-context":79,"../core/time-engine":81,"../utils/scheduling-queue":92,"./factories":86,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],88:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
 
+var _inherits = require("babel-runtime/helpers/inherits")["default"];
+
+var _get = require("babel-runtime/helpers/get")["default"];
+
 var _createClass = require("babel-runtime/helpers/create-class")["default"];
 
-var PriorityQueue = require("../utils/priority-queue");
-var TimeEngine = require("../core/time-engine");
+var _core = require("babel-runtime/core-js")["default"];
+
 var defaultAudioContext = require("../core/audio-context");
+var TimeEngine = require("../core/time-engine");
+var PriorityQueue = require("../utils/priority-queue");
+var SchedulingQueue = require("../utils/scheduling-queue");
 
-function arrayRemove(array, value) {
-  var index = array.indexOf(value);
-
-  if (index >= 0) {
-    array.splice(index, 1);
-    return true;
-  }
-
-  return false;
-}
-
-var Scheduler = (function () {
+var Scheduler = (function (_SchedulingQueue) {
   function Scheduler() {
     var options = arguments[0] === undefined ? {} : arguments[0];
 
     _classCallCheck(this, Scheduler);
 
-    this.audioContext = options.audioContext || defaultAudioContext;
+    _get(_core.Object.getPrototypeOf(Scheduler.prototype), "constructor", this).call(this);
 
-    this.__queue = new PriorityQueue();
-    this.__engines = [];
+    this.audioContext = options.audioContext || defaultAudioContext;
 
     this.__currentTime = null;
     this.__nextTime = Infinity;
@@ -11879,6 +14502,8 @@ var Scheduler = (function () {
     this.lookahead = options.lookahead || 0.1;
   }
 
+  _inherits(Scheduler, _SchedulingQueue);
+
   _createClass(Scheduler, {
     __tick: {
 
@@ -11886,181 +14511,121 @@ var Scheduler = (function () {
 
       value: function __tick() {
         var audioContext = this.audioContext;
-        var nextTime = this.__nextTime;
+        var time = this.__nextTime;
 
         this.__timeout = null;
 
-        while (nextTime <= audioContext.currentTime + this.lookahead) {
-          this.__currentTime = nextTime;
-
-          var engine = this.__queue.head;
-          var time = engine.advanceTime(this.__currentTime);
-
-          if (time && time < Infinity) {
-            nextTime = this.__queue.move(engine, Math.max(time, this.__currentTime));
-          } else {
-            nextTime = this.__queue.remove(engine);
-
-            // remove time engine from scheduler if advanceTime returns null/undfined
-            if (!time && engine.master === this) engine.resetInterface();
-          }
+        while (time <= audioContext.currentTime + this.lookahead) {
+          this.__currentTime = time;
+          time = this.advanceTime(time);
         }
 
         this.__currentTime = null;
-        this.__reschedule(nextTime);
+        this.resetTime(time);
       }
     },
-    __reschedule: {
-      value: function __reschedule(nextTime) {
+    resetTime: {
+      value: function resetTime() {
         var _this = this;
 
-        if (this.__timeout) {
-          clearTimeout(this.__timeout);
-          this.__timeout = null;
-        }
+        var time = arguments[0] === undefined ? this.currentTime : arguments[0];
 
-        if (nextTime !== Infinity) {
-          this.__nextTime = nextTime;
+        if (this.master) {
+          this.master.reset(this, time);
+        } else {
+          if (this.__timeout) {
+            clearTimeout(this.__timeout);
+            this.__timeout = null;
+          }
 
-          var timeOutDelay = Math.max(nextTime - this.audioContext.currentTime - this.lookahead, this.period);
+          if (time !== Infinity) {
+            if (this.__nextTime === Infinity) console.log("Scheduler Start");
 
-          this.__timeout = setTimeout(function () {
-            _this.__tick();
-          }, timeOutDelay * 1000);
+            var timeOutDelay = Math.max(time - this.lookahead - this.audioContext.currentTime, this.period);
+
+            this.__timeout = setTimeout(function () {
+              _this.__tick();
+            }, timeOutDelay * 1000);
+          } else if (this.__nextTime !== Infinity) {
+            console.log("Scheduler Stop");
+          }
+
+          this.__nextTime = time;
         }
       }
     },
     currentTime: {
-
-      /**
-       * Get scheduler time
-       * @return {Number} current scheduler time including lookahead
-       */
-
       get: function () {
+        if (this.master) return this.master.currentTime;
+
         return this.__currentTime || this.audioContext.currentTime + this.lookahead;
+      }
+    },
+    currentPosition: {
+      get: function () {
+        var master = this.master;
+
+        if (master && master.currentPosition !== undefined) return master.currentPosition;
+
+        return undefined;
       }
     },
     add: {
 
-      /**
-       * Add a time engine or a simple callback function to the scheduler
-       * @param {Object} engine time engine to be added to the scheduler
-       * @param {Number} time scheduling time
-       * @param {Function} function to get current position
-       * @return handle to the scheduled engine (use for calling further methods)
-       */
+      // add a time engine to the queue and return the engine
 
-      value: function add(engine) {
-        var _this = this;
-
+      value: function add(engineOrFunction) {
         var time = arguments[1] === undefined ? this.currentTime : arguments[1];
-        var getCurrentPosition = arguments[2] === undefined ? null : arguments[2];
 
-        if (engine instanceof Function) {
-          // construct minimal scheduled time engine
+        var engine;
+
+        if (engineOrFunction instanceof Function) {
+          // construct minimal scheduled engine
           engine = {
-            advanceTime: engine
+            advanceTime: engineOrFunction
           };
         } else {
+          engine = engineOrFunction;
+
           if (!engine.implementsScheduled()) throw new Error("object cannot be added to scheduler");
 
           if (engine.master) throw new Error("object has already been added to a master");
-
-          // register engine
-          this.__engines.push(engine);
-
-          // set scheduled interface
-          engine.setScheduled(this, function (time) {
-            var nextTime = _this.__queue.move(engine, time);
-            _this.__reschedule(nextTime);
-          }, function () {
-            return _this.currentTime;
-          }, getCurrentPosition);
         }
 
-        // schedule engine or callback
-        var nextTime = this.__queue.insert(engine, time);
-        this.__reschedule(nextTime);
-
-        return engine;
+        _get(_core.Object.getPrototypeOf(Scheduler.prototype), "add", this).call(this, engine, time);
       }
     },
     remove: {
-
-      /**
-       * Remove a time engine from the scheduler
-       * @param {Object} engine time engine or callback to be removed from the scheduler
-       */
-
       value: function remove(engine) {
-        var master = engine.master;
+        if (engine.master !== this) throw new Error("object has not been added to this scheduler");
 
-        if (master) {
-          if (master !== this) throw new Error("object has not been added to this scheduler");
-
-          engine.resetInterface();
-          arrayRemove(this.__engines, engine);
-        }
-
-        var nextTime = this.__queue.remove(engine);
-        this.__reschedule(nextTime);
+        _get(_core.Object.getPrototypeOf(Scheduler.prototype), "remove", this).call(this, engine);
       }
     },
-    reset: {
+    resetEngineTime: {
+      value: function resetEngineTime(engine) {
+        var time = arguments[1] === undefined ? this.currentTime : arguments[1];
 
-      /**
-       * Reschedule a scheduled time engine or callback at a given time
-       * @param {Object} engine time engine or callback to be rescheduled
-       * @param {Number} time time when to reschedule
-       */
+        if (engine.master !== this) throw new Error("object has not been added to this scheduler");
 
-      value: function reset(engine, time) {
-        var nextTime = this.__queue.move(engine, time);
-        this.__reschedule(nextTime);
-      }
-    },
-    clear: {
-
-      /**
-       * Remove all schdeduled callbacks and engines from the scheduler
-       */
-
-      value: function clear() {
-        if (this.__timeout) {
-          clearTimeout(this.__timeout);
-          this.__timeout = null;
-        }
-
-        this.__queue.clear();
-        this.__engines.length = 0;
+        _get(_core.Object.getPrototypeOf(Scheduler.prototype), "resetEngineTime", this).call(this, engine, time);
       }
     }
   });
 
   return Scheduler;
-})();
+})(SchedulingQueue);
 
 module.exports = Scheduler;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE scheduler singleton based on audio time (time-engine master)
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
 
-},{"../core/audio-context":68,"../core/time-engine":69,"../utils/priority-queue":79,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82}],77:[function(require,module,exports){
+},{"../core/audio-context":79,"../core/time-engine":81,"../utils/priority-queue":91,"../utils/scheduling-queue":92,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],89:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
 
 var _createClass = require("babel-runtime/helpers/create-class")["default"];
 
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE simplified scheduler singleton based on audio time (time-engine master)
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
-
+var defaultAudioContext = require("../core/audio-context");
 var TimeEngine = require("../core/time-engine");
 
 function arrayRemove(array, value) {
@@ -12121,6 +14686,9 @@ var SimpleScheduler = (function () {
             this.__schedEngines.splice(index, 1);
             this.__schedTimes.splice(index, 1);
           }
+        } else if (time < Infinity) {
+          this.__schedEngines.push(engine);
+          this.__schedTimes.push(time);
         }
       }
     },
@@ -12137,8 +14705,12 @@ var SimpleScheduler = (function () {
     __resetTick: {
       value: function __resetTick() {
         if (this.__schedEngines.length > 0) {
-          if (!this.__timeout) this.__tick();
+          if (!this.__timeout) {
+            console.log("SimpleScheduler Start");
+            this.__tick();
+          }
         } else if (this.__timeout) {
+          console.log("SimpleScheduler Stop");
           clearTimeout(this.__timeout);
           this.__timeout = null;
         }
@@ -12167,7 +14739,10 @@ var SimpleScheduler = (function () {
             this.__unscheduleEngine(engine);
 
             // remove engine from scheduler
-            if (!time && arrayRemove(this.__engines, engine)) engine.resetInterface();
+            if (!time) {
+              engine.master = null;
+              arrayRemove(this.__engines, engine);
+            }
           }
         }
 
@@ -12182,75 +14757,31 @@ var SimpleScheduler = (function () {
       }
     },
     currentTime: {
-
-      /**
-       * Get scheduler time
-       * @return {Number} current scheduler time including lookahead
-       */
-
       get: function () {
         return this.__currentTime || this.audioContext.currentTime + this.lookahead;
       }
     },
-    callback: {
-
-      /**
-       * Add a callback to the scheduler
-       * @param {Function} callback function(time) to be called
-       * @param {Number} time of first callback (default is now)
-       * @param {Number} period callback period (default is 0 for one-shot)
-       * @return {Object} scheduled object that can be used to call remove and reset
-       */
-
-      value: function callback(callbackFunction) {
-        var time = arguments[1] === undefined ? this.currentTime : arguments[1];
-
-        var engineWrapper = {
-          advanceTime: callbackFunction
-        };
-
-        this.__scheduleEngine(engineWrapper, time);
-        this.__resetTick();
-
-        return engineWrapper;
+    currentPosition: {
+      get: function () {
+        return undefined;
       }
     },
     add: {
-
-      /**
-       * Add a time engine to the scheduler
-       * @param {Object} engine time engine to be added to the scheduler
-       * @param {Number} time scheduling time
-       */
-
-      value: function add(engine) {
-        var _this = this;
-
+      value: function add(engineOrFunction) {
         var time = arguments[1] === undefined ? this.currentTime : arguments[1];
         var getCurrentPosition = arguments[2] === undefined ? null : arguments[2];
 
-        if (engine instanceof Function) {
-          // construct minimal scheduled time engine
-          engine = {
-            advanceTime: engine
-          };
-        } else {
-          if (!engine.implementsScheduled()) throw new Error("object cannot be added to scheduler");
+        var engine = engineOrFunction;
 
-          if (engine.master) throw new Error("object has already been added to a master");
+        if (engineOrFunction instanceof Function) engine = {
+          advanceTime: engineOrFunction
+        };else if (!engineOrFunction.implementsScheduled()) throw new Error("object cannot be added to scheduler");else if (engineOrFunction.master) throw new Error("object has already been added to a master");
 
-          // register engine
-          this.__engines.push(engine);
+        // set master and add to array
+        engine.master = this;
+        this.__engines.push(engine);
 
-          // set scheduled interface
-          engine.setScheduled(this, function (time) {
-            _this.__rescheduleEngine(engine, time);
-            _this.__resetTick();
-          }, function () {
-            return _this.currentTime;
-          }, getCurrentPosition);
-        }
-
+        // schedule engine
         this.__scheduleEngine(engine, time);
         this.__resetTick();
 
@@ -12258,35 +14789,22 @@ var SimpleScheduler = (function () {
       }
     },
     remove: {
-
-      /**
-       * Remove a scheduled time engine or callback from the scheduler
-       * @param {Object} engine time engine or callback to be removed from the scheduler
-       */
-
       value: function remove(engine) {
-        var master = engine.master;
+        if (!engine.master || engine.master !== this) throw new Error("engine has not been added to this scheduler");
 
-        if (master) {
-          if (master !== this) throw new Error("object has not been added to this scheduler");
+        // reset master and remove from array
+        engine.master = null;
+        arrayRemove(this.__engines, engine);
 
-          engine.resetInterface();
-          arrayRemove(this.__engines, engine);
-        }
-
+        // unschedule engine
         this.__unscheduleEngine(engine);
         this.__resetTick();
       }
     },
-    reset: {
+    resetEngineTime: {
+      value: function resetEngineTime(engine) {
+        var time = arguments[1] === undefined ? this.currentTime : arguments[1];
 
-      /**
-       * Reschedule a scheduled time engine or callback
-       * @param {Object} engine time engine or callback to be rescheduled
-       * @param {Number} time time when to reschedule
-       */
-
-      value: function reset(engine, time) {
         this.__rescheduleEngine(engine, time);
         this.__resetTick();
       }
@@ -12310,7 +14828,7 @@ var SimpleScheduler = (function () {
 // export scheduler singleton
 module.exports = SimpleScheduler;
 
-},{"../core/time-engine":69,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82}],78:[function(require,module,exports){
+},{"../core/audio-context":79,"../core/time-engine":81,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95}],90:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -12323,14 +14841,18 @@ var _get = require("babel-runtime/helpers/get")["default"];
 
 var _core = require("babel-runtime/core-js")["default"];
 
+var defaultAudioContext = require("../core/audio-context");
 var TimeEngine = require("../core/time-engine");
 var PriorityQueue = require("../utils/priority-queue");
+var SchedulingQueue = require("../utils/scheduling-queue");
+var getScheduler = require("./factories").getScheduler;
 
-var _require = require("./factories");
+function addDuplet(firstArray, secondArray, firstElement, secondElement) {
+  firstArray.push(firstElement);
+  secondArray.push(secondElement);
+}
 
-var getScheduler = _require.getScheduler;
-
-function removeCouple(firstArray, secondArray, firstElement) {
+function removeDuplet(firstArray, secondArray, firstElement) {
   var index = firstArray.indexOf(firstElement);
 
   if (index >= 0) {
@@ -12345,12 +14867,20 @@ function removeCouple(firstArray, secondArray, firstElement) {
   return null;
 }
 
+// The Transported call is the base class of the adapters between
+// different types of engines (i.e. transported, scheduled, play-controlled)
+// The adapters are at the same time masters for the engines added to the transport
+// and transported TimeEngines inserted into the transport's position-based pritority queue.
+
 var Transported = (function (_TimeEngine) {
   function Transported(transport, engine, startPosition, endPosition, offsetPosition) {
     _classCallCheck(this, Transported);
 
-    this.__transport = transport;
+    this.master = transport;
+
+    engine.master = this;
     this.__engine = engine;
+
     this.__startPosition = startPosition;
     this.__endPosition = endPosition;
     this.__offsetPosition = offsetPosition;
@@ -12372,7 +14902,7 @@ var Transported = (function (_TimeEngine) {
           _this.__endPosition = endPosition;
           _this.__offsetPosition = offsetPosition;
           _this.__scalePosition = scalePosition;
-          _this.resetNextPosition();
+          _this.resetPosition();
         })();
       }
     },
@@ -12381,6 +14911,23 @@ var Transported = (function (_TimeEngine) {
     },
     stop: {
       value: function stop(time, position) {}
+    },
+    currentTime: {
+      get: function () {
+        return this.master.currentTime;
+      }
+    },
+    currentPosition: {
+      get: function () {
+        return this.master.currentPosition - this.__offsetPosition;
+      }
+    },
+    resetPosition: {
+      value: function resetPosition(position) {
+        if (position !== undefined) position += this.__offsetPosition;
+
+        this.master.resetEnginePosition(this, position);
+      }
     },
     syncPosition: {
       value: function syncPosition(time, position, speed) {
@@ -12449,7 +14996,8 @@ var Transported = (function (_TimeEngine) {
     },
     destroy: {
       value: function destroy() {
-        this.__transport = null;
+        this.master = null;
+        this.__engine.master = null;
         this.__engine = null;
       }
     }
@@ -12458,31 +15006,14 @@ var Transported = (function (_TimeEngine) {
   return Transported;
 })(TimeEngine);
 
-// TransportedScheduled has to switch on and off the scheduled engines
-// when the transport hits the engine's start and end position
+// TransportedScheduled
+// has to switch on and off the scheduled engines when the transport hits the engine's start and end position
 
 var TransportedTransported = (function (_Transported) {
   function TransportedTransported(transport, engine, startPosition, endPosition, offsetPosition) {
-    var _this = this;
-
     _classCallCheck(this, TransportedTransported);
 
     _get(_core.Object.getPrototypeOf(TransportedTransported.prototype), "constructor", this).call(this, transport, engine, startPosition, endPosition, offsetPosition);
-
-    engine.setTransported(this, function () {
-      var nextEnginePosition = arguments[0] === undefined ? null : arguments[0];
-
-      // resetNextPosition
-      if (nextEnginePosition !== null) nextEnginePosition += _this.__offsetPosition;
-
-      _this.resetNextPosition(nextEnginePosition);
-    }, function () {
-      // getCurrentTime
-      return _this.__transport.scheduler.currentTime;
-    }, function () {
-      // get currentPosition
-      return _this.__transport.currentPosition - _this.__offsetPosition;
-    });
   }
 
   _inherits(TransportedTransported, _Transported);
@@ -12509,10 +15040,13 @@ var TransportedTransported = (function (_Transported) {
         if (this.__engine.syncSpeed) this.__engine.syncSpeed(time, position, speed);
       }
     },
-    destroy: {
-      value: function destroy() {
-        this.__engine.resetInterface();
-        _get(_core.Object.getPrototypeOf(TransportedTransported.prototype), "destroy", this).call(this);
+    resetEnginePosition: {
+      value: function resetEnginePosition(engine) {
+        var position = arguments[1] === undefined ? undefined : arguments[1];
+
+        if (position !== undefined) position += this.__offsetPosition;
+
+        this.resetPosition(position);
       }
     }
   });
@@ -12520,24 +15054,14 @@ var TransportedTransported = (function (_Transported) {
   return TransportedTransported;
 })(Transported);
 
-// TransportedSpeedControlled has to start and stop the speed-controlled engines
-// when the transport hits the engine's start and end position
+// TransportedSpeedControlled
+// has to start and stop the speed-controlled engines when the transport hits the engine's start and end position
 
 var TransportedSpeedControlled = (function (_Transported2) {
   function TransportedSpeedControlled(transport, engine, startPosition, endPosition, offsetPosition) {
-    var _this = this;
-
     _classCallCheck(this, TransportedSpeedControlled);
 
     _get(_core.Object.getPrototypeOf(TransportedSpeedControlled.prototype), "constructor", this).call(this, transport, engine, startPosition, endPosition, offsetPosition);
-
-    engine.setSpeedControlled(this, function () {
-      // getCurrentTime
-      return _this.__transport.scheduler.currentTime;
-    }, function () {
-      // get currentPosition
-      return _this.__transport.currentPosition - _this.__offsetPosition;
-    });
   }
 
   _inherits(TransportedSpeedControlled, _Transported2);
@@ -12561,8 +15085,7 @@ var TransportedSpeedControlled = (function (_Transported2) {
     },
     destroy: {
       value: function destroy() {
-        this.__engine.syncSpeed(this.__transport.currentTime, this.__transport.currentPosition - this.__offsetPosition, 0);
-        this.__engine.resetInterface();
+        this.__engine.syncSpeed(this.master.currentTime, this.master.currentPosition - this.__offsetPosition, 0);
         _get(_core.Object.getPrototypeOf(TransportedSpeedControlled.prototype), "destroy", this).call(this);
       }
     }
@@ -12571,21 +15094,15 @@ var TransportedSpeedControlled = (function (_Transported2) {
   return TransportedSpeedControlled;
 })(Transported);
 
-// TransportedScheduled has to switch on and off the scheduled engines
-// when the transport hits the engine's start and end position
+// TransportedScheduled
+// has to switch on and off the scheduled engines when the transport hits the engine's start and end position
 
 var TransportedScheduled = (function (_Transported3) {
   function TransportedScheduled(transport, engine, startPosition, endPosition, offsetPosition) {
-    var _this = this;
-
     _classCallCheck(this, TransportedScheduled);
 
     _get(_core.Object.getPrototypeOf(TransportedScheduled.prototype), "constructor", this).call(this, transport, engine, startPosition, endPosition, offsetPosition);
-
-    this.__transport.scheduler.add(engine, Infinity, function () {
-      // get currentPosition
-      return (_this.__transport.currentPosition - _this.__offsetPosition) * _this.__scalePosition;
-    });
+    transport.__schedulingQueue.add(engine, Infinity);
   }
 
   _inherits(TransportedScheduled, _Transported3);
@@ -12593,17 +15110,17 @@ var TransportedScheduled = (function (_Transported3) {
   _createClass(TransportedScheduled, {
     start: {
       value: function start(time, position, speed) {
-        this.__engine.resetNextTime(time);
+        this.master.__schedulingQueue.resetEngineTime(this.__engine, time);
       }
     },
     stop: {
       value: function stop(time, position) {
-        this.__engine.resetNextTime(Infinity);
+        this.master.__schedulingQueue.resetEngineTime(this.__engine, Infinity);
       }
     },
     destroy: {
       value: function destroy() {
-        this.__transport.scheduler.remove(this.__engine);
+        this.master.__schedulingQueue.remove(this.__engine);
         _get(_core.Object.getPrototypeOf(TransportedScheduled.prototype), "destroy", this).call(this);
       }
     }
@@ -12617,7 +15134,12 @@ var TransportSchedulerHook = (function (_TimeEngine2) {
     _classCallCheck(this, TransportSchedulerHook);
 
     _get(_core.Object.getPrototypeOf(TransportSchedulerHook.prototype), "constructor", this).call(this);
+
     this.__transport = transport;
+
+    this.__nextPosition = Infinity;
+    this.__nextTime = Infinity;
+    transport.__scheduler.add(this, Infinity);
   }
 
   _inherits(TransportSchedulerHook, _TimeEngine2);
@@ -12629,18 +15151,77 @@ var TransportSchedulerHook = (function (_TimeEngine2) {
 
       value: function advanceTime(time) {
         var transport = this.__transport;
-        var position = transport.__getPositionAtTime(time);
-        var nextPosition = transport.advancePosition(time, position, transport.__speed);
+        var position = this.__nextPosition;
+        var speed = transport.__speed;
+        var nextPosition = transport.advancePosition(time, position, speed);
+        var nextTime = transport.__getTimeAtPosition(nextPosition);
 
-        if (nextPosition !== Infinity) {
-          return transport.__getTimeAtPosition(nextPosition);
-        }return Infinity;
+        while (nextTime <= time) {
+          nextPosition = transport.advancePosition(nextTime, nextPosition, speed);
+          nextTime = transport.__getTimeAtPosition(nextPosition);
+        }
+
+        this.__nextPosition = nextPosition;
+        this.__nextTime = nextTime;
+        return nextTime;
+      }
+    },
+    resetPosition: {
+      value: function resetPosition() {
+        var position = arguments[0] === undefined ? this.__nextPosition : arguments[0];
+
+        var transport = this.__transport;
+        var time = transport.__getTimeAtPosition(position);
+
+        this.__nextPosition = position;
+        this.__nextTime = time;
+        this.resetTime(time);
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.__transport.__scheduler.remove(this);
+        this.__transport = null;
       }
     }
   });
 
   return TransportSchedulerHook;
 })(TimeEngine);
+
+var TransportSchedulingQueue = (function (_SchedulingQueue) {
+  function TransportSchedulingQueue(transport) {
+    _classCallCheck(this, TransportSchedulingQueue);
+
+    _get(_core.Object.getPrototypeOf(TransportSchedulingQueue.prototype), "constructor", this).call(this);
+
+    this.__transport = transport;
+    transport.__scheduler.add(this, Infinity);
+  }
+
+  _inherits(TransportSchedulingQueue, _SchedulingQueue);
+
+  _createClass(TransportSchedulingQueue, {
+    currentTime: {
+      get: function () {
+        return this.__transport.currentTime;
+      }
+    },
+    currentPosition: {
+      get: function () {
+        return this.__transport.currentPosition;
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.__transport.__scheduler.remove(this);
+        this.__transport = null;
+      }
+    }
+  });
+
+  return TransportSchedulingQueue;
+})(SchedulingQueue);
 
 /**
  * Transport class
@@ -12652,35 +15233,35 @@ var Transport = (function (_TimeEngine3) {
 
     _classCallCheck(this, Transport);
 
-    _get(_core.Object.getPrototypeOf(Transport.prototype), "constructor", this).call(this, options.audioContext);
+    _get(_core.Object.getPrototypeOf(Transport.prototype), "constructor", this).call(this);
 
-    this.scheduler = getScheduler(this.audioContext);
+    this.audioContext = options.audioContext || defaultAudioContext;
 
     this.__engines = [];
     this.__transported = [];
 
-    this.__schedulerHook = null;
-    this.__transportQueue = new PriorityQueue();
+    this.__scheduler = getScheduler(this.audioContext);
+    this.__schedulerHook = new TransportSchedulerHook(this);
+    this.__transportedQueue = new PriorityQueue();
+    this.__schedulingQueue = new TransportSchedulingQueue(this);
 
     // syncronized time, position, and speed
     this.__time = 0;
     this.__position = 0;
     this.__speed = 0;
-
-    this.__nextPosition = Infinity;
   }
 
   _inherits(Transport, _TimeEngine3);
 
   _createClass(Transport, {
-    __getPositionAtTime: {
-      value: function __getPositionAtTime(time) {
-        return this.__position + (time - this.__time) * this.__speed;
-      }
-    },
     __getTimeAtPosition: {
       value: function __getTimeAtPosition(position) {
         return this.__time + (position - this.__position) / this.__speed;
+      }
+    },
+    __getPositionAtTime: {
+      value: function __getPositionAtTime(time) {
+        return this.__position + (time - this.__time) * this.__speed;
       }
     },
     __syncTransportedPosition: {
@@ -12691,18 +15272,18 @@ var Transport = (function (_TimeEngine3) {
         if (numTransportedEngines > 0) {
           var engine, nextEnginePosition;
 
-          this.__transportQueue.clear();
-          this.__transportQueue.reverse = speed < 0;
+          this.__transportedQueue.clear();
+          this.__transportedQueue.reverse = speed < 0;
 
           for (var i = numTransportedEngines - 1; i > 0; i--) {
             engine = this.__transported[i];
             nextEnginePosition = engine.syncPosition(time, position, speed);
-            this.__transportQueue.insert(engine, nextEnginePosition, false); // insert but don't sort
+            this.__transportedQueue.insert(engine, nextEnginePosition, false); // insert but don't sort
           }
 
           engine = this.__transported[0];
           nextEnginePosition = engine.syncPosition(time, position, speed);
-          nextPosition = this.__transportQueue.insert(engine, nextEnginePosition, true); // insert and sort
+          nextPosition = this.__transportedQueue.insert(engine, nextEnginePosition, true); // insert and sort
         }
 
         return nextPosition;
@@ -12746,7 +15327,7 @@ var Transport = (function (_TimeEngine3) {
        */
 
       get: function () {
-        return this.scheduler.currentTime;
+        return this.__scheduler.currentTime;
       }
     },
     currentPosition: {
@@ -12759,22 +15340,24 @@ var Transport = (function (_TimeEngine3) {
        */
 
       get: function () {
-        return this.__position + (this.scheduler.currentTime - this.__time) * this.__speed;
+        var master = this.master;
+
+        if (master && master.currentPosition !== undefined) return master.currentPosition;
+
+        return this.__position + (this.__scheduler.currentTime - this.__time) * this.__speed;
       }
     },
-    resetNextPosition: {
+    resetPosition: {
 
       /**
        * Reset next transport position
        * @param {Number} next transport position
-       *
-       * This function will be replaced when the transport is added to a master (i.e. transport or play-control).
        */
 
-      value: function resetNextPosition(nextPosition) {
-        if (this.__schedulerHook) this.__schedulerHook.resetNextTime(this.__getTimeAtPosition(nextPosition));
+      value: function resetPosition(position) {
+        var master = this.master;
 
-        this.__nextPosition = nextPosition;
+        if (master && master.resetEnginePosition !== undefined) master.resetEnginePosition(this, position);else this.__schedulerHook.resetPosition(position);
       }
     },
     syncPosition: {
@@ -12794,12 +15377,20 @@ var Transport = (function (_TimeEngine3) {
       // TimeEngine method (transported interface)
 
       value: function advancePosition(time, position, speed) {
-        var nextEngine = this.__transportQueue.head;
-        var nextEnginePosition = nextEngine.advancePosition(time, position, speed);
+        var nextPosition = this.__transportedQueue.time;
 
-        this.__nextPosition = this.__transportQueue.move(nextEngine, nextEnginePosition);
+        while (nextPosition === position) {
+          var engine = this.__transportedQueue.head;
+          var nextEnginePosition = engine.advancePosition(time, position, speed);
 
-        return this.__nextPosition;
+          if ((speed > 0 && nextEnginePosition > position || speed < 0 && nextEnginePosition < position) && (nextEnginePosition < Infinity && nextEnginePosition > -Infinity)) {
+            nextPosition = this.__transportedQueue.move(engine, nextEnginePosition);
+          } else {
+            nextPosition = this.__transportedQueue.remove(engine);
+          }
+        }
+
+        return nextPosition;
       }
     },
     syncSpeed: {
@@ -12816,7 +15407,7 @@ var Transport = (function (_TimeEngine3) {
         this.__speed = speed;
 
         if (speed !== lastSpeed || seek && speed !== 0) {
-          var nextPosition = this.__nextPosition;
+          var nextPosition;
 
           // resync transported engines
           if (seek || speed * lastSpeed < 0) {
@@ -12825,25 +15416,16 @@ var Transport = (function (_TimeEngine3) {
           } else if (lastSpeed === 0) {
             // start
             nextPosition = this.__syncTransportedPosition(time, position, speed);
-
-            // schedule transport itself
-            this.__schedulerHook = new TransportSchedulerHook(this);
-            this.scheduler.add(this.__schedulerHook, Infinity);
           } else if (speed === 0) {
             // stop
             nextPosition = Infinity;
-
             this.__syncTransportedSpeed(time, position, 0);
-
-            // unschedule transport itself
-            this.scheduler.remove(this.__schedulerHook);
-            delete this.__schedulerHook;
           } else {
             // change speed without reversing direction
             this.__syncTransportedSpeed(time, position, speed);
           }
 
-          this.resetNextPosition(nextPosition);
+          this.resetPosition(nextPosition);
         }
       }
     },
@@ -12873,35 +15455,14 @@ var Transport = (function (_TimeEngine3) {
           if (transported) {
             var speed = _this.__speed;
 
-            _this.__engines.push(engine);
-            _this.__transported.push(transported);
-
-            transported.setTransported(_this, function () {
-              var nextEnginePosition = arguments[0] === undefined ? null : arguments[0];
-
-              // resetNextPosition
-              var speed = _this.__speed;
-
-              if (speed !== 0) {
-                if (nextEnginePosition === null) nextEnginePosition = transported.syncPosition(_this.currentTime, _this.currentPosition, speed);
-
-                var nextPosition = _this.__transportQueue.move(transported, nextEnginePosition);
-                _this.resetNextPosition(nextPosition);
-              }
-            }, function () {
-              // getCurrentTime
-              return _this.__transport.scheduler.currentTime;
-            }, function () {
-              // get currentPosition
-              return _this.__transport.currentPosition - _this.__offsetPosition;
-            });
+            addDuplet(_this.__engines, _this.__transported, engine, transported);
 
             if (speed !== 0) {
               // sync and start
               var nextEnginePosition = transported.syncPosition(_this.currentTime, _this.currentPosition, speed);
-              var nextPosition = _this.__transportQueue.insert(transported, nextEnginePosition);
+              var nextPosition = _this.__transportedQueue.insert(transported, nextEnginePosition);
 
-              _this.resetNextPosition(nextPosition);
+              _this.resetPosition(nextPosition);
             }
           }
 
@@ -12918,22 +15479,35 @@ var Transport = (function (_TimeEngine3) {
 
       value: function remove(engineOrTransported) {
         var engine = engineOrTransported;
-        var transported = removeCouple(this.__engines, this.__transported, engineOrTransported);
+        var transported = removeDuplet(this.__engines, this.__transported, engineOrTransported);
 
         if (!transported) {
-          engine = removeCouple(this.__transported, this.__engines, engineOrTransported);
+          engine = removeDuplet(this.__transported, this.__engines, engineOrTransported);
           transported = engineOrTransported;
         }
 
         if (engine && transported) {
-          var nextPosition = this.__transportQueue.remove(transported);
+          var nextPosition = this.__transportedQueue.remove(transported);
 
-          transported.resetInterface();
           transported.destroy();
 
-          if (this.__speed !== 0) this.resetNextPosition(nextPosition);
+          if (this.__speed !== 0) this.resetPosition(nextPosition);
         } else {
           throw new Error("object has not been added to this transport");
+        }
+      }
+    },
+    resetEnginePosition: {
+      value: function resetEnginePosition(transported) {
+        var position = arguments[1] === undefined ? undefined : arguments[1];
+
+        var speed = this.__speed;
+
+        if (speed !== 0) {
+          if (position === undefined) position = transported.syncPosition(this.currentTime, this.currentPosition, speed);
+
+          var nextPosition = this.__transportedQueue.move(transported, position);
+          this.resetPosition(nextPosition);
         }
       }
     },
@@ -12954,7 +15528,6 @@ var Transport = (function (_TimeEngine3) {
           for (var _iterator = _core.$for.getIterator(this.__transported), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
             var transported = _step.value;
 
-            transported.resetInterface();
             transported.destroy();
           }
         } catch (err) {
@@ -12979,13 +15552,8 @@ var Transport = (function (_TimeEngine3) {
 })(TimeEngine);
 
 module.exports = Transport;
-/* written in ECMAscript 6 */
-/**
- * @fileoverview WAVE audio transport class (time-engine master), provides synchronized scheduling of time engines
- * @author Norbert.Schnell@ircam.fr, Victor.Saiz@ircam.fr, Karim.Barkati@ircam.fr
- */
 
-},{"../core/time-engine":69,"../utils/priority-queue":79,"./factories":74,"babel-runtime/core-js":80,"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82,"babel-runtime/helpers/get":83,"babel-runtime/helpers/inherits":84}],79:[function(require,module,exports){
+},{"../core/audio-context":79,"../core/time-engine":81,"../utils/priority-queue":91,"../utils/scheduling-queue":92,"./factories":86,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],91:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -13147,7 +15715,152 @@ var PriorityQueue = (function () {
 
 module.exports = PriorityQueue;
 
-},{"babel-runtime/helpers/class-call-check":81,"babel-runtime/helpers/create-class":82}],80:[function(require,module,exports){
+},{"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95}],92:[function(require,module,exports){
+"use strict";
+
+var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
+
+var _inherits = require("babel-runtime/helpers/inherits")["default"];
+
+var _get = require("babel-runtime/helpers/get")["default"];
+
+var _createClass = require("babel-runtime/helpers/create-class")["default"];
+
+var _core = require("babel-runtime/core-js")["default"];
+
+var PriorityQueue = require("../utils/priority-queue");
+var TimeEngine = require("../core/time-engine");
+var defaultAudioContext = require("../core/audio-context");
+
+function arrayRemove(array, value) {
+  var index = array.indexOf(value);
+
+  if (index >= 0) {
+    array.splice(index, 1);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * @class SchedulingQueue
+ */
+
+var SchedulingQueue = (function (_TimeEngine) {
+  function SchedulingQueue() {
+    _classCallCheck(this, SchedulingQueue);
+
+    _get(_core.Object.getPrototypeOf(SchedulingQueue.prototype), "constructor", this).call(this);
+
+    this.__queue = new PriorityQueue();
+    this.__engines = [];
+  }
+
+  _inherits(SchedulingQueue, _TimeEngine);
+
+  _createClass(SchedulingQueue, {
+    advanceTime: {
+
+      // TimeEngine 'scheduled' interface
+
+      value: function advanceTime(time) {
+        var nextTime = this.__queue.time;
+
+        while (nextTime <= time) {
+          var engine = this.__queue.head;
+          var nextEngineTime = engine.advanceTime(time);
+
+          if (!nextEngineTime) {
+            engine.master = null;
+            arrayRemove(this.__engines, engine);
+            nextTime = this.__queue.remove(engine);
+          } else if (nextEngineTime > time && nextEngineTime < Infinity) {
+            nextTime = this.__queue.move(engine, nextEngineTime);
+          } else {
+            nextTime = this.__queue.remove(engine);
+          }
+        }
+
+        return nextTime;
+      }
+    },
+    currentTime: {
+
+      // TimeEngine master method to be implemented by derived class
+
+      get: function () {
+        return 0;
+      }
+    },
+    add: {
+
+      // add a time engine to the queue and return the engine
+
+      value: function add(engine) {
+        var time = arguments[1] === undefined ? this.currentTime : arguments[1];
+
+        engine.master = this;
+
+        // add to engines and queue
+        this.__engines.push(engine);
+        var nextTime = this.__queue.insert(engine, time);
+
+        // reschedule queue
+        this.resetTime(nextTime);
+      }
+    },
+    remove: {
+
+      // remove a time engine from the queue
+
+      value: function remove(engine) {
+        engine.master = null;
+
+        // remove from array and queue
+        arrayRemove(this.__engines, engine);
+        var nextTime = this.__queue.remove(engine);
+
+        // reschedule queue
+        this.resetTime(nextTime);
+      }
+    },
+    resetEngineTime: {
+
+      // reset next engine time
+
+      value: function resetEngineTime(engine) {
+        var time = arguments[1] === undefined ? this.currentTime : arguments[1];
+
+        var nextTime = this.__queue.move(engine, time);
+        this.resetTime(nextTime);
+      }
+    },
+    clear: {
+
+      // clear queue
+
+      value: function clear() {
+        this.__queue.clear();
+        this.__engines.length = 0;
+        this.resetTime(Infinity);
+      }
+    }
+  });
+
+  return SchedulingQueue;
+})(TimeEngine);
+
+module.exports = SchedulingQueue;
+/**
+ * SchedulingQueue base class
+ * http://wavesjs.github.io/audio/#audio-scheduling-queue
+ *
+ * Norbert.Schnell@ircam.fr
+ * Copyright 2014, 2015 IRCAM – Centre Pompidou
+ */
+
+},{"../core/audio-context":79,"../core/time-engine":81,"../utils/priority-queue":91,"babel-runtime/core-js":93,"babel-runtime/helpers/class-call-check":94,"babel-runtime/helpers/create-class":95,"babel-runtime/helpers/get":96,"babel-runtime/helpers/inherits":97}],93:[function(require,module,exports){
 /**
  * Core.js 0.6.1
  * https://github.com/zloirock/core-js
@@ -15489,7 +18202,7 @@ $define(GLOBAL + FORCED, {global: global});
 }(typeof self != 'undefined' && self.Math === Math ? self : Function('return this')(), false);
 module.exports = { "default": module.exports, __esModule: true };
 
-},{}],81:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 "use strict";
 
 exports["default"] = function (instance, Constructor) {
@@ -15499,7 +18212,7 @@ exports["default"] = function (instance, Constructor) {
 };
 
 exports.__esModule = true;
-},{}],82:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 "use strict";
 
 exports["default"] = (function () {
@@ -15521,7 +18234,7 @@ exports["default"] = (function () {
 })();
 
 exports.__esModule = true;
-},{}],83:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 "use strict";
 
 var _core = require("babel-runtime/core-js")["default"];
@@ -15565,7 +18278,7 @@ exports["default"] = function get(_x, _x2, _x3) {
 };
 
 exports.__esModule = true;
-},{"babel-runtime/core-js":80}],84:[function(require,module,exports){
+},{"babel-runtime/core-js":93}],97:[function(require,module,exports){
 "use strict";
 
 exports["default"] = function (subClass, superClass) {
@@ -15585,13 +18298,14 @@ exports["default"] = function (subClass, superClass) {
 };
 
 exports.__esModule = true;
-},{}],85:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 'use strict';
 
 var wavesAudio = {
   // core
   audioContext: require('./dist/core/audio-context'),
   TimeEngine: require('./dist/core/time-engine'),
+  AudioTimeEngine: require('./dist/core/audio-time-engine'),
   // engines
   GranularEngine: require('./dist/engines/granular-engine'),
   Metronome: require('./dist/engines/metronome'),
@@ -15605,6 +18319,7 @@ var wavesAudio = {
   SimpleScheduler: require('./dist/masters/simple-scheduler'),
   // utils
   PriorityQueue: require('./dist/utils/priority-queue'),
+  SchedulingQueue: require('./dist/utils/scheduling-queue'),
   // factories
   getScheduler: require('./dist/masters/factories').getScheduler,
   getSimpleScheduler: require('./dist/masters/factories').getSimpleScheduler
@@ -15613,7 +18328,7 @@ var wavesAudio = {
 
 
 module.exports = wavesAudio;
-},{"./dist/core/audio-context":68,"./dist/core/time-engine":69,"./dist/engines/granular-engine":70,"./dist/engines/metronome":71,"./dist/engines/player-engine":72,"./dist/engines/segment-engine":73,"./dist/masters/factories":74,"./dist/masters/play-control":75,"./dist/masters/scheduler":76,"./dist/masters/simple-scheduler":77,"./dist/masters/transport":78,"./dist/utils/priority-queue":79}],86:[function(require,module,exports){
+},{"./dist/core/audio-context":79,"./dist/core/audio-time-engine":80,"./dist/core/time-engine":81,"./dist/engines/granular-engine":82,"./dist/engines/metronome":83,"./dist/engines/player-engine":84,"./dist/engines/segment-engine":85,"./dist/masters/factories":86,"./dist/masters/play-control":87,"./dist/masters/scheduler":88,"./dist/masters/simple-scheduler":89,"./dist/masters/transport":90,"./dist/utils/priority-queue":91,"./dist/utils/scheduling-queue":92}],99:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
@@ -15637,7 +18352,11 @@ function throwIfMissing() {
   throw new Error("Missing parameter");
 }
 
-var audioContext = new AudioContext();
+var audioContext;
+
+try {
+  audioContext = new window.AudioContext();
+} catch (e) {}
 
 /**
  * AudioBufferLoader
@@ -15654,13 +18373,15 @@ var AudioBufferLoader = (function (_Loader) {
    */
 
   function AudioBufferLoader() {
+    var responseType = arguments[0] === undefined ? "arraybuffer" : arguments[0];
+
     _classCallCheck(this, AudioBufferLoader);
 
+    _get(_core.Object.getPrototypeOf(AudioBufferLoader.prototype), "constructor", this).call(this, responseType);
     this.options = {
       wrapAroundExtension: 0
     };
-    this.responseType = "arraybuffer";
-    _get(_core.Object.getPrototypeOf(AudioBufferLoader.prototype), "constructor", this).call(this, this.responseType);
+    this.responseType = responseType;
   }
 
   _inherits(AudioBufferLoader, _Loader);
@@ -15733,14 +18454,20 @@ var AudioBufferLoader = (function (_Loader) {
       value: function decodeAudioData(arraybuffer) {
         var _this = this;
 
-        return new _core.Promise(function (resolve, reject) {
-          audioContext.decodeAudioData(arraybuffer, // returned audio data array
-          function (buffer) {
-            if (_this.options.wrapAroundExtension === 0) resolve(buffer);else resolve(_this.__wrapAround(buffer));
-          }, function (error) {
-            reject(new Error("DecodeAudioData error"));
+        if (arraybuffer instanceof ArrayBuffer) {
+          return new _core.Promise(function (resolve, reject) {
+            audioContext.decodeAudioData(arraybuffer, // returned audio data array
+            function (buffer) {
+              if (_this.options.wrapAroundExtension === 0) resolve(buffer);else resolve(_this.__wrapAround(buffer));
+            }, function (error) {
+              reject(new Error("DecodeAudioData error"));
+            });
           });
-        });
+        } else {
+          return new _core.Promise(function (resolve, reject) {
+            resolve(arraybuffer);
+          });
+        }
       }
     },
     __wrapAround: {
@@ -15760,6 +18487,7 @@ var AudioBufferLoader = (function (_Loader) {
         for (var channel = 0; channel < inBuffer.numberOfChannels; channel++) {
           arrayChData = inBuffer.getChannelData(channel);
           arrayOutChData = outBuffer.getChannelData(channel);
+          console.log(arrayOutChData);
 
           arrayOutChData.forEach(function (sample, index) {
             if (index < inBuffer.length) arrayOutChData[index] = arrayChData[index];else arrayOutChData[index] = arrayChData[index - inBuffer.length];
@@ -15776,22 +18504,20 @@ var AudioBufferLoader = (function (_Loader) {
 
 module.exports = AudioBufferLoader;
 
-},{"./loader":87,"babel-runtime/core-js":89,"babel-runtime/helpers/class-call-check":90,"babel-runtime/helpers/create-class":91,"babel-runtime/helpers/get":92,"babel-runtime/helpers/inherits":93}],87:[function(require,module,exports){
-"use strict";
-
-var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
-
-var _get = require("babel-runtime/helpers/get")["default"];
-
-var _createClass = require("babel-runtime/helpers/create-class")["default"];
-
-var _core = require("babel-runtime/core-js")["default"];
-
+},{"./loader":100,"babel-runtime/core-js":102,"babel-runtime/helpers/class-call-check":103,"babel-runtime/helpers/create-class":104,"babel-runtime/helpers/get":105,"babel-runtime/helpers/inherits":106}],100:[function(require,module,exports){
 /**
  * Gets called if a parameter is missing and the expression
  * specifying the default value is evaluated.
  * @function
  */
+"use strict";
+
+var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
+
+var _createClass = require("babel-runtime/helpers/create-class")["default"];
+
+var _core = require("babel-runtime/core-js")["default"];
+
 function throwIfMissing() {
   throw new Error("Missing parameter");
 }
@@ -15810,11 +18536,10 @@ var Loader = (function () {
    */
 
   function Loader() {
-    var responseType = arguments[0] === undefined ? "" : arguments[0];
+    var responseType = arguments[0] === undefined ? undefined : arguments[0];
 
     _classCallCheck(this, Loader);
 
-    _get(_core.Object.getPrototypeOf(Loader.prototype), "constructor", this).call(this);
     this.responseType = responseType;
     // rename to `onProgress` ?
     this.progressCb = undefined;
@@ -15892,8 +18617,16 @@ var Loader = (function () {
           var request = new XMLHttpRequest();
           request.open("GET", url, true);
           request.index = index;
-
-          request.responseType = _this.responseType;
+          if (_this.responseType) {
+            request.responseType = _this.responseType;
+          } else {
+            var suffix = ".json";
+            if (url.indexOf(suffix, _this.length - suffix.length) !== -1) {
+              request.responseType = "json";
+            } else {
+              request.responseType = "arraybuffer";
+            }
+          }
           request.addEventListener("load", function () {
             // Test request.status value, as 404 will also get there
             if (request.status === 200 || request.status === 304) {
@@ -15964,26 +18697,14 @@ var Loader = (function () {
 
 module.exports = Loader;
 
-},{"babel-runtime/core-js":89,"babel-runtime/helpers/class-call-check":90,"babel-runtime/helpers/create-class":91,"babel-runtime/helpers/get":92}],88:[function(require,module,exports){
+},{"babel-runtime/core-js":102,"babel-runtime/helpers/class-call-check":103,"babel-runtime/helpers/create-class":104}],101:[function(require,module,exports){
 "use strict";
 
 var _classCallCheck = require("babel-runtime/helpers/class-call-check")["default"];
 
-var _createClass = require("babel-runtime/helpers/create-class")["default"];
+var _inherits = require("babel-runtime/helpers/inherits")["default"];
 
-var _core = require("babel-runtime/core-js")["default"];
-
-var Loader = require("./loader");
 var AudioBufferLoader = require("./audio-buffer-loader");
-
-/**
- * Gets called if a parameter is missing and the expression
- * specifying the default value is evaluated.
- * @function
- */
-function throwIfMissing() {
-  throw new Error("Missing parameter");
-}
 
 /**
  * SuperLoader
@@ -15991,7 +18712,7 @@ function throwIfMissing() {
  * @classdesc Helper to load multiple type of files, and get them in their useful type, json for json files, AudioBuffer for audio files.
  */
 
-var SuperLoader = (function () {
+var SuperLoader = (function (_AudioBufferLoader) {
 
   /**
    * @constructs
@@ -16000,97 +18721,28 @@ var SuperLoader = (function () {
 
   function SuperLoader() {
     _classCallCheck(this, SuperLoader);
-
-    this.bufferLoader = new AudioBufferLoader();
-    this.loader = new Loader("json");
   }
 
-  _createClass(SuperLoader, {
-    load: {
-
-      /**
-       * @function - Method for promise audio and json file loading (and decoding for audio).
-       * @param {(string|string[])} fileURLs - The URL(s) of the files to load. Accepts a URL pointing to the file location or an array of URLs.
-       * @param {{wrapAroundExtension: number}} [options] - Object with a wrapAroundExtension key which set the length, in seconds to be copied from the begining
-       * at the end of the returned AudioBuffer
-       * @returns {Promise}
-       */
-
-      value: function load() {
-        var fileURLs = arguments[0] === undefined ? throwIfMissing() : arguments[0];
-        var options = arguments[1] === undefined ? {} : arguments[1];
-
-        this.options = options;
-        this.options.wrapAroundExtension = this.options.wrapAroundExtension || 0;
-        if (Array.isArray(fileURLs)) {
-          var i = -1;
-          var pos = [[], []]; // pos is used to track the positions of each fileURL
-          var otherURLs = fileURLs.filter(function (url, index) {
-            // var extname = path.extname(url);
-            var parts = url.split(".");
-            var extname = parts[parts.length - 1];
-            i += 1;
-            if (extname == "json") {
-              pos[0].push(i);
-              return true;
-            } else {
-              pos[1].push(i);
-              return false;
-            }
-          });
-
-          // var audioURLs = _.difference(fileURLs, otherURLs);
-          var audioURLs = fileURLs.filter(function (url) {
-            if (otherURLs.indexOf(url) === -1) {
-              return url;
-            }
-          });
-
-          var promises = [];
-
-          if (otherURLs.length > 0) promises.push(this.loader.load(otherURLs));
-          if (audioURLs.length > 0) promises.push(this.bufferLoader.load(audioURLs, this.options));
-
-          return new _core.Promise(function (resolve, reject) {
-            _core.Promise.all(promises).then(function (datas) {
-              // Need to reorder and flatten all of these fulfilled promises
-              // @todo this is ugly
-              if (datas.length === 1) {
-                resolve(datas[0]);
-              } else {
-                var outData = [];
-                for (var j = 0; j < pos.length; j++) {
-                  for (var k = 0; k < pos[j].length; k++) {
-                    outData[pos[j][k]] = datas[j][k];
-                  }
-                }
-                resolve(outData);
-              }
-            }, function (error) {
-              throw error;
-            });
-          });
-        }
-      }
-    }
-  });
+  _inherits(SuperLoader, _AudioBufferLoader);
 
   return SuperLoader;
-})();
+})(AudioBufferLoader);
 
 module.exports = SuperLoader;
 
-},{"./audio-buffer-loader":86,"./loader":87,"babel-runtime/core-js":89,"babel-runtime/helpers/class-call-check":90,"babel-runtime/helpers/create-class":91}],89:[function(require,module,exports){
-module.exports=require(80)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/core-js.js":80}],90:[function(require,module,exports){
-module.exports=require(81)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/class-call-check.js":81}],91:[function(require,module,exports){
-module.exports=require(82)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/create-class.js":82}],92:[function(require,module,exports){
-module.exports=require(83)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/get.js":83,"babel-runtime/core-js":89}],93:[function(require,module,exports){
-module.exports=require(84)
-},{"/Users/lambert/Documents/src/collective-soundworks/soundworks-beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/inherits.js":84}],94:[function(require,module,exports){
+// bypass AudioBufferLoader constructor. This is bad but it works.
+
+},{"./audio-buffer-loader":99,"babel-runtime/helpers/class-call-check":103,"babel-runtime/helpers/inherits":106}],102:[function(require,module,exports){
+module.exports=require(93)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/core-js.js":93}],103:[function(require,module,exports){
+module.exports=require(94)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/class-call-check.js":94}],104:[function(require,module,exports){
+module.exports=require(95)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/create-class.js":95}],105:[function(require,module,exports){
+module.exports=require(96)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/get.js":96,"babel-runtime/core-js":102}],106:[function(require,module,exports){
+module.exports=require(97)
+},{"/Users/schnell/Development/web/collective-soundworks/beats/node_modules/soundworks/node_modules/waves-audio/node_modules/babel-runtime/helpers/inherits.js":97}],107:[function(require,module,exports){
 /**
  * @file Loaders: AudioBuffer loader and utilities
  * @author Samuel Goldszmidt
@@ -16104,7 +18756,7 @@ module.exports = {
   SuperLoader: require('./dist/super-loader')
 };
 
-},{"./dist/audio-buffer-loader":86,"./dist/loader":87,"./dist/super-loader":88}],95:[function(require,module,exports){
+},{"./dist/audio-buffer-loader":99,"./dist/loader":100,"./dist/super-loader":101}],108:[function(require,module,exports){
 'use strict';var PRS$0 = (function(o,t){o["__proto__"]={"a":t};return o["a"]===t})({},{});var DP$0 = Object.defineProperty;var GOPD$0 = Object.getOwnPropertyDescriptor;var MIXIN$0 = function(t,s){for(var p in s){if(s.hasOwnProperty(p)){DP$0(t,p,GOPD$0(s,p));}}return t};var SP$0 = Object.setPrototypeOf||function(o,p){if(PRS$0){o["__proto__"]=p;}else {DP$0(o,"__proto__",{"value":p,"configurable":true,"enumerable":false,"writable":true});}return o};var OC$0 = Object.create;
 
 // Loading the libraries
@@ -16346,4 +18998,4 @@ window.addEventListener('load', function()  {
 
 });
 
-},{"debug":2,"soundworks/client":16}]},{},[95]);
+},{"debug":2,"soundworks/client":21}]},{},[108]);
