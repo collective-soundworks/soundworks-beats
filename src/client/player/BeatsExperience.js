@@ -22,7 +22,6 @@ export default class BeatsClientPerformance extends Experience {
 
     this._sync = this.require('sync');
     this._platform = this.require('platform', { features: 'web-audio' });
-    this._welcome = this.require('welcome');
 
     this.synth = new Synth(this._sync); // a Web Audio synth that makes sound
 
