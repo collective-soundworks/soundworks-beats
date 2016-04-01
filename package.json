@@ -5,7 +5,7 @@
     "Sébastien Robaszkiewicz"
   ],
   "description": "Simple synchronisation test",
-  "version": "0.3.1",
+  "version": "1.0.0",
   "scripts": {
     "postinstall": "npm run transpile",
     "start": "node ./bin/runner --start",
