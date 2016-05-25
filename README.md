@@ -1,7 +1,7 @@
 Simplistic way to test the synchronisation process.
 
     npm install
-    gulp
+    npm run start
 
 Please note that only the audio clocks are synchronised, which let
 several issues unsolved:
