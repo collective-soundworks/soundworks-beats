@@ -1,14 +1,19 @@
 import * as soundworks from 'soundworks/server';
 import BeatsExperience from './BeatsExperience';
+import defaultConfig from './config/default';
 
-const config = {
-  appName: 'Beats',
-  // name of the environement, (use NODE_ENV=production to configure express at the same time.)
-  env: (process.env.NODE_ENV || 'development'),
-};
+let config = null;
 
+switch(process.env.ENV) {
+  default:
+    config = defaultConfig;
+    break;
+}
+
+// configure express environment ('production' enable cache systems)
+process.env.NODE_ENV = config.env;
+// initialize application with configuration options
 soundworks.server.init(config);
-
 // define the configuration object to be passed to the `.ejs` template
 soundworks.server.setClientConfigDefinition((clientType, config, httpRequest) => {
   return {
