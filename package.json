@@ -5,7 +5,7 @@
     "Sébastien Robaszkiewicz"
   ],
   "description": "Simple synchronisation test",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "scripts": {
     "minify": "node ./bin/runner --minify",
     "prewatch": "npm run transpile",
