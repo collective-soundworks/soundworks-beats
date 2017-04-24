@@ -15,16 +15,22 @@ export default class Synth {
     this.clickBuffer = this.generateClickBuffer();
     this.clackBuffer = this.generateClackBuffer();
     this.noiseBuffer = this.generateNoiseBuffer();
+
+    this.output = audioContext.createGain();
+  }
+
+  connect(destination) {
+    this.output.connect(destination);
   }
 
   generateClickBuffer() {
     const length = 2;
     const channels = 1;
     const gain = -10; // dB
+    const sampleRate = audioContext.sampleRate;
 
-    let buffer = audioContext.createBuffer(channels, length,
-                                           audioContext.sampleRate);
-    let data = buffer.getChannelData(0);
+    const buffer = audioContext.createBuffer(channels, length, sampleRate);
+    const data = buffer.getChannelData(0);
 
     const amplitude = this.dBToLin(gain);
     data[0] = amplitude;
@@ -37,15 +43,14 @@ export default class Synth {
     const length = 5;
     const channels = 1;
     const gain = -10; // dB
+    const sampleRate = audioContext.sampleRate;
 
-    let buffer = audioContext.createBuffer(channels, length,
-                                           audioContext.sampleRate);
+    const buffer = audioContext.createBuffer(channels, length, sampleRate);
+    const data = buffer.getChannelData(0);
     const amplitude = this.dBToLin(gain);
-    let data = buffer.getChannelData(0);
 
-    for(let i = 0; i < length; ++i) {
+    for(let i = 0; i < length; ++i)
       data[i] = amplitude; // sic
-    }
 
     return buffer;
   }
@@ -57,13 +62,13 @@ export default class Synth {
     const length = duration * audioContext.sampleRate;
     const amplitude = this.dBToLin(gain);
     const channelCount = audioContext.destination.channelCount;
-    let buffer = audioContext.createBuffer(channelCount, length,
+    const buffer = audioContext.createBuffer(channelCount, length,
                                            audioContext.sampleRate);
-    for(let c = 0; c < channelCount; ++c) {
-      let data = buffer.getChannelData(c);
-      for(let i = 0; i < length; ++i) {
+    for (let c = 0; c < channelCount; ++c) {
+      const data = buffer.getChannelData(c);
+
+      for (let i = 0; i < length; ++i)
         data[i] = amplitude * (Math.random() * 2 + 1);
-      }
     }
 
     return buffer;
@@ -80,9 +85,9 @@ export default class Synth {
     clearTimeout(this.scheduleID);
     const now = this.sync.getSyncTime();
 
-    if(nextTime < now + this.scheduleLookahead) {
+    if (nextTime < now + this.scheduleLookahead) {
       // too late
-      if(nextTime < now) {
+      if (nextTime < now) {
         log('too late by', nextTime - now);
         this.triggerSound(nextTime, this.noiseBuffer);
 
@@ -90,7 +95,7 @@ export default class Synth {
         nextTime += Math.ceil((now - nextTime) / period) * period;
 
         // next it might be soon: fast forward
-        if(nextTime < now + this.scheduleLookahead) {
+        if (nextTime < now + this.scheduleLookahead) {
           log('soon', nextTime - now);
           this.triggerSound(nextTime, this.clackBuffer);
           nextTime += period;
@@ -103,7 +108,7 @@ export default class Synth {
 
     } // within look-ahead
 
-    this.scheduleID = setTimeout( () => {
+    this.scheduleID = setTimeout(() => {
       this.play(nextTime, period);
     }, 1000 * this.schedulePeriod);
   }
@@ -115,9 +120,9 @@ export default class Synth {
    *
    */
   triggerSound(startTime, buffer) {
-    let bufferSource = audioContext.createBufferSource();
+    const bufferSource = audioContext.createBufferSource();
     bufferSource.buffer = buffer;
-    bufferSource.connect(audioContext.destination);
+    bufferSource.connect(this.output);
 
     // compensate client delay
     const localTime = Math.max(0, this.sync.getAudioTime(startTime));

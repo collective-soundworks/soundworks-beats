@@ -1,7 +1,7 @@
 import { Experience } from 'soundworks/server';
 
 
-export default class BeatsExperience extends Experience {
+class BeatsExperience extends Experience {
   constructor(clientTypes) {
     super(clientTypes);
 
@@ -19,3 +19,5 @@ export default class BeatsExperience extends Experience {
     this.send(client, 'start:beat', this.startTime, this.beatPeriod);
   }
 }
+
+export default BeatsExperience;

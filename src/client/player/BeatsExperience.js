@@ -1,4 +1,4 @@
-import { Experience, View } from 'soundworks/client';
+import { Experience, View, audioContext } from 'soundworks/client';
 import Synth from './Synth';
 
 const template = `
@@ -20,13 +20,22 @@ export default class BeatsClientPerformance extends Experience {
   constructor() {
     super();
 
-    this._sync = this.require('sync');
-    this._platform = this.require('platform', { features: 'web-audio' });
+    this.sync = this.require('sync');
+    this.platform = this.require('platform', { features: 'web-audio' });
+  }
 
-    this.synth = new Synth(this._sync); // a Web Audio synth that makes sound
+  start() {
+    super.start();
+
+    this.master = audioContext.createGain();
+    this.master.connect(audioContext.destination);
+    this.master.gain.value = 1;
+
+    this.synth = new Synth(this.sync); // a Web Audio synth that makes sound
+    this.synth.connect(this.master);
 
     // we hope that some report will be done before experience starts
-    this.viewContent = {
+    const model = {
       status: '',
       statusDuration: 0,
       timeOffset: 0,
@@ -39,26 +48,15 @@ export default class BeatsClientPerformance extends Experience {
       travelDurationMax: 0,
     }
 
-    this._sync.addListener((report) => {
-      Object.assign(this.viewContent, report);
+    this.sync.addListener((report) => {
+      Object.assign(model, report);
 
       if (this.view)
         this.view.render();
     });
-  }
 
-  init() {
-    this.viewTemplate = template;
-    this.viewCtor = View;
-
-    this.view = this.createView();
-  }
-
-  start() {
-    super.start();
-
-    if (!this.hasStarted)
-      this.init();
+    this.view = new View(template, model);
+    this.view.options.id = this.id;
 
     this.show();
     // When the server sends the beat loop start time
