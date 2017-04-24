@@ -49,12 +49,13 @@ function generateClackBuffer() {
 function generateNoiseBuffer() {
   const duration = 0.2; // second
   const gain = -30; // dB
+  const sampleRate = audioContext.sampleRate;
 
   const length = duration * audioContext.sampleRate;
   const amplitude = dBToLin(gain);
   const channelCount = audioContext.destination.channelCount;
-  const buffer = audioContext.createBuffer(channelCount, length,
-                                         audioContext.sampleRate);
+  const buffer = audioContext.createBuffer(channelCount, length, sampleRate);
+
   for (let c = 0; c < channelCount; ++c) {
     const data = buffer.getChannelData(c);
 
