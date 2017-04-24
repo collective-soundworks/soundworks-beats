@@ -22,20 +22,10 @@ export default class BeatsClientPerformance extends Experience {
 
     this.sync = this.require('sync');
     this.platform = this.require('platform', { features: 'web-audio' });
-  }
-
-  start() {
-    super.start();
-
-    this.master = audioContext.createGain();
-    this.master.connect(audioContext.destination);
-    this.master.gain.value = 1;
-
-    this.synth = new Synth(this.sync); // a Web Audio synth that makes sound
-    this.synth.connect(this.master);
+    this.sharedParams = this.require('shared-params');
 
     // we hope that some report will be done before experience starts
-    const model = {
+    this.model = {
       status: '',
       statusDuration: 0,
       timeOffset: 0,
@@ -49,19 +39,37 @@ export default class BeatsClientPerformance extends Experience {
     }
 
     this.sync.addListener((report) => {
-      Object.assign(model, report);
+      Object.assign(this.model, report);
 
       if (this.view)
         this.view.render();
     });
+  }
 
-    this.view = new View(template, model);
+  start() {
+    super.start();
+
+    this.mute = audioContext.createGain();
+    this.mute.connect(audioContext.destination);
+    this.mute.gain.value = 0;
+
+    this.synth = new Synth(this.sync); // a Web Audio synth that makes sound
+    this.synth.connect(this.mute);
+
+    this.view = new View(template, this.model);
     this.view.options.id = this.id;
 
     this.show();
-    // When the server sends the beat loop start time
+    // when the server sends the beat loop start time
     this.receive('start:beat', (startTime, beatPeriod) => {
       this.synth.play(startTime, beatPeriod);
+    });
+
+    this.sharedParams.addParamListener('play', (value) => {
+      if (value)
+        this.mute.gain.value = 1;
+      else
+        this.mute.gain.value = 0;
     });
   }
 }

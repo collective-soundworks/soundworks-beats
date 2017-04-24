@@ -4,7 +4,68 @@ import debug from 'debug';
 const log = debug('soundworks:beats');
 
 
-export default class Synth {
+/**
+ * Convert dB to linear gain value (1e-3 for -60dB)
+ *
+ * @param {number} dBValue
+ * @return {number} gain value
+ */
+function dBToLin(dBValue) {
+  return Math.pow(10, dBValue / 20);
+}
+
+function generateClickBuffer() {
+  const length = 2;
+  const channels = 1;
+  const gain = -10; // dB
+  const sampleRate = audioContext.sampleRate;
+
+  const buffer = audioContext.createBuffer(channels, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  const amplitude = dBToLin(gain);
+  data[0] = amplitude;
+  data[1] = -amplitude;
+
+  return buffer;
+}
+
+function generateClackBuffer() {
+  const length = 5;
+  const channels = 1;
+  const gain = -10; // dB
+  const sampleRate = audioContext.sampleRate;
+
+  const buffer = audioContext.createBuffer(channels, length, sampleRate);
+  const data = buffer.getChannelData(0);
+  const amplitude = dBToLin(gain);
+
+  for (let i = 0; i < length; ++i)
+    data[i] = amplitude; // sic
+
+  return buffer;
+}
+
+function generateNoiseBuffer() {
+  const duration = 0.2; // second
+  const gain = -30; // dB
+
+  const length = duration * audioContext.sampleRate;
+  const amplitude = dBToLin(gain);
+  const channelCount = audioContext.destination.channelCount;
+  const buffer = audioContext.createBuffer(channelCount, length,
+                                         audioContext.sampleRate);
+  for (let c = 0; c < channelCount; ++c) {
+    const data = buffer.getChannelData(c);
+
+    for (let i = 0; i < length; ++i)
+      data[i] = amplitude * (Math.random() * 2 + 1);
+  }
+
+  return buffer;
+}
+
+class Synth {
   constructor(sync) {
     this.sync = sync;
 
@@ -12,9 +73,9 @@ export default class Synth {
     this.schedulePeriod = 0.05;
     this.scheduleLookahead = 0.5;
 
-    this.clickBuffer = this.generateClickBuffer();
-    this.clackBuffer = this.generateClackBuffer();
-    this.noiseBuffer = this.generateNoiseBuffer();
+    this.clickBuffer = generateClickBuffer();
+    this.clackBuffer = generateClackBuffer();
+    this.noiseBuffer = generateNoiseBuffer();
 
     this.output = audioContext.createGain();
   }
@@ -23,63 +84,12 @@ export default class Synth {
     this.output.connect(destination);
   }
 
-  generateClickBuffer() {
-    const length = 2;
-    const channels = 1;
-    const gain = -10; // dB
-    const sampleRate = audioContext.sampleRate;
-
-    const buffer = audioContext.createBuffer(channels, length, sampleRate);
-    const data = buffer.getChannelData(0);
-
-    const amplitude = this.dBToLin(gain);
-    data[0] = amplitude;
-    data[1] = -amplitude;
-
-    return buffer;
-  }
-
-  generateClackBuffer() {
-    const length = 5;
-    const channels = 1;
-    const gain = -10; // dB
-    const sampleRate = audioContext.sampleRate;
-
-    const buffer = audioContext.createBuffer(channels, length, sampleRate);
-    const data = buffer.getChannelData(0);
-    const amplitude = this.dBToLin(gain);
-
-    for(let i = 0; i < length; ++i)
-      data[i] = amplitude; // sic
-
-    return buffer;
-  }
-
-  generateNoiseBuffer() {
-    const duration = 0.2; // second
-    const gain = -30; // dB
-
-    const length = duration * audioContext.sampleRate;
-    const amplitude = this.dBToLin(gain);
-    const channelCount = audioContext.destination.channelCount;
-    const buffer = audioContext.createBuffer(channelCount, length,
-                                           audioContext.sampleRate);
-    for (let c = 0; c < channelCount; ++c) {
-      const data = buffer.getChannelData(c);
-
-      for (let i = 0; i < length; ++i)
-        data[i] = amplitude * (Math.random() * 2 + 1);
-    }
-
-    return buffer;
-  }
-
   /**
    * Initiate a running process, starting at nextTime, or now if
    * nextTime is in past.
    *
-   * @param {Number} nextTime in sync time
-   * @param {Number} period
+   * @param {Number} nextTime - in sync time
+   * @param {Number} period - in seconds
    */
   play(nextTime, period) {
     clearTimeout(this.scheduleID);
@@ -116,8 +126,7 @@ export default class Synth {
   /**
    * Actually output the sound.
    *
-   * @param {Number} startTime in master time
-   *
+   * @param {Number} startTime - in sync time
    */
   triggerSound(startTime, buffer) {
     const bufferSource = audioContext.createBufferSource();
@@ -128,15 +137,6 @@ export default class Synth {
     const localTime = Math.max(0, this.sync.getAudioTime(startTime));
     bufferSource.start(localTime);
   }
-
-  /**
-   * Convert dB to linear gain value (1e-3 for -60dB)
-   *
-   * @param {number} dBValue
-   *
-   * @return {number} gain value
-   */
-  dBToLin(dBValue) {
-    return Math.pow(10, dBValue / 20);
-  }
 }
+
+export default Synth;

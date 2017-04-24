@@ -14,7 +14,7 @@ several issues unsolved:
   audio buffer size: depending on the device, this usually ranges
   from 64 to 4096 samples (which translates to 6 to 85 ms at 44100 and
   48000 Hz).
-- There is an other latency added by the device, which is unknown, and
+- There is another latency added by the device, which is unknown, and
   may come from the browser, and the audio driver.
 
 The clock frequency, however, is accurate if the duration of measure

@@ -1,6 +1,6 @@
 import 'source-map-support/register'; // enable sourcemaps in node
 import path from 'path';
-import * as soundworks from 'soundworks/server';
+import { server, ControllerExperience } from 'soundworks/server';
 import BeatsExperience from './BeatsExperience';
 
 // init configuration
@@ -16,13 +16,12 @@ try {
   process.exit(1);
 }
 
-// configure express environment ('production' enables cache systems)
+// configure express environment ('production' enables `express` cache systems)
 process.env.NODE_ENV = config.env;
 // initialize application with configuration options
-soundworks.server.init(config);
-
+server.init(config);
 // define the configuration object to be passed to the `.ejs` template
-soundworks.server.setClientConfigDefinition((clientType, config, httpRequest) => {
+server.setClientConfigDefinition((clientType, config, httpRequest) => {
   return {
     clientType: clientType,
     env: config.env,
@@ -34,6 +33,10 @@ soundworks.server.setClientConfigDefinition((clientType, config, httpRequest) =>
   };
 });
 
-const performance = new BeatsExperience('player');
+const sharedParams = server.require('shared-params');
+sharedParams.addBoolean('play', 'Play', true);
 
-soundworks.server.start();
+const beatsExperience = new BeatsExperience('player');
+const controllerExperience = new ControllerExperience('controller');
+
+server.start();

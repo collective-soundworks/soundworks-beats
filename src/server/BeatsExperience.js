@@ -5,11 +5,12 @@ class BeatsExperience extends Experience {
   constructor(clientTypes) {
     super(clientTypes);
 
-    this._sync = this.require('sync');
+    this.sync = this.require('sync');
+    this.sharedParams = this.require('shared-params');
   }
 
   start() {
-    this.startTime = this._sync.getSyncTime();
+    this.startTime = this.sync.getSyncTime();
     this.beatPeriod = 1; // in seconds
   }
 
