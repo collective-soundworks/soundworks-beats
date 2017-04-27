@@ -16,7 +16,7 @@ const template = `
   </ul>
 `;
 
-export default class BeatsClientPerformance extends Experience {
+class BeatsPerformance extends Experience {
   constructor() {
     super();
 
@@ -49,27 +49,20 @@ export default class BeatsClientPerformance extends Experience {
   start() {
     super.start();
 
-    this.mute = audioContext.createGain();
-    this.mute.connect(audioContext.destination);
-    this.mute.gain.value = 0;
-
     this.synth = new Synth(this.sync); // a Web Audio synth that makes sound
-    this.synth.connect(this.mute);
+    this.synth.connect(audioContext.destination);
 
-    this.view = new View(template, this.model);
-    this.view.options.id = this.id;
-
+    this.view = new View(template, this.model, {}, { id: this.id });
     this.show();
     // when the server sends the beat loop start time
     this.receive('start:beat', (startTime, beatPeriod) => {
       this.synth.play(startTime, beatPeriod);
     });
 
-    this.sharedParams.addParamListener('play', (value) => {
-      if (value)
-        this.mute.gain.value = 1;
-      else
-        this.mute.gain.value = 0;
+    this.sharedParams.addParamListener('gain', (gain) => {
+      this.synth.gain = gain;
     });
   }
 }
+
+export default BeatsPerformance;

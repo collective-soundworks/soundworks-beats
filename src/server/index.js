@@ -34,7 +34,8 @@ server.setClientConfigDefinition((clientType, config, httpRequest) => {
 });
 
 const sharedParams = server.require('shared-params');
-sharedParams.addBoolean('play', 'Play', true);
+// sharedParams.addBoolean('start', 'Start', false);
+sharedParams.addNumber('gain', 'Gain', 0, 1, 0.01, 1);
 
 const beatsExperience = new BeatsExperience('player');
 const controllerExperience = new ControllerExperience('controller');

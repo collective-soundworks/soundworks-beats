@@ -81,6 +81,10 @@ class Synth {
     this.output = audioContext.createGain();
   }
 
+  set gain(value) {
+    this.output.gain.value = value;
+  }
+
   connect(destination) {
     this.output.connect(destination);
   }
@@ -94,6 +98,7 @@ class Synth {
    */
   play(nextTime, period) {
     clearTimeout(this.scheduleID);
+
     const now = this.sync.getSyncTime();
 
     if (nextTime < now + this.scheduleLookahead) {

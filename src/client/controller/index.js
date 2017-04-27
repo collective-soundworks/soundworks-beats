@@ -17,5 +17,11 @@ window.addEventListener('load', () => {
   });
 
   const experience = new soundworks.ControllerExperience();
+
+  experience.setGuiOptions('gain', {
+    type: 'slider',
+    size: 'large',
+  });
+
   soundworks.client.start();
 });
