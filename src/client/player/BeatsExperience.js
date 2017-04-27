@@ -1,4 +1,4 @@
-import { Experience, View } from 'soundworks/client';
+import { Experience, View, audioContext } from 'soundworks/client';
 import Synth from './Synth';
 
 const template = `
@@ -16,17 +16,16 @@ const template = `
   </ul>
 `;
 
-export default class BeatsClientPerformance extends Experience {
+class BeatsPerformance extends Experience {
   constructor() {
     super();
 
-    this._sync = this.require('sync');
-    this._platform = this.require('platform', { features: 'web-audio' });
-
-    this.synth = new Synth(this._sync); // a Web Audio synth that makes sound
+    this.sync = this.require('sync');
+    this.platform = this.require('platform', { features: 'web-audio' });
+    this.sharedParams = this.require('shared-params');
 
     // we hope that some report will be done before experience starts
-    this.viewContent = {
+    this.model = {
       status: '',
       statusDuration: 0,
       timeOffset: 0,
@@ -39,31 +38,31 @@ export default class BeatsClientPerformance extends Experience {
       travelDurationMax: 0,
     }
 
-    this._sync.addListener((report) => {
-      Object.assign(this.viewContent, report);
+    this.sync.addListener((report) => {
+      Object.assign(this.model, report);
 
       if (this.view)
         this.view.render();
     });
   }
 
-  init() {
-    this.viewTemplate = template;
-    this.viewCtor = View;
-
-    this.view = this.createView();
-  }
-
   start() {
     super.start();
 
-    if (!this.hasStarted)
-      this.init();
+    this.synth = new Synth(this.sync); // a Web Audio synth that makes sound
+    this.synth.connect(audioContext.destination);
 
+    this.view = new View(template, this.model, {}, { id: this.id });
     this.show();
-    // When the server sends the beat loop start time
+    // when the server sends the beat loop start time
     this.receive('start:beat', (startTime, beatPeriod) => {
       this.synth.play(startTime, beatPeriod);
     });
+
+    this.sharedParams.addParamListener('gain', (gain) => {
+      this.synth.gain = gain;
+    });
   }
 }
+
+export default BeatsPerformance;

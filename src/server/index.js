@@ -1,21 +1,27 @@
-import * as soundworks from 'soundworks/server';
+import 'source-map-support/register'; // enable sourcemaps in node
+import path from 'path';
+import { server, ControllerExperience } from 'soundworks/server';
 import BeatsExperience from './BeatsExperience';
-import defaultConfig from './config/default';
 
+// init configuration
+const configName = process.env.ENV || 'default';
+const configPath = path.join(__dirname, 'config', configName);
 let config = null;
 
-switch(process.env.ENV) {
-  default:
-    config = defaultConfig;
-    break;
+// rely on node `require` for synchronicity
+try {
+  config = require(configPath).default;
+} catch(err) {
+  console.error(`Invalid ENV "${configName}", file "${configPath}.js" not found`);
+  process.exit(1);
 }
 
-// configure express environment ('production' enables cache systems)
+// configure express environment ('production' enables `express` cache systems)
 process.env.NODE_ENV = config.env;
 // initialize application with configuration options
-soundworks.server.init(config);
+server.init(config);
 // define the configuration object to be passed to the `.ejs` template
-soundworks.server.setClientConfigDefinition((clientType, config, httpRequest) => {
+server.setClientConfigDefinition((clientType, config, httpRequest) => {
   return {
     clientType: clientType,
     env: config.env,
@@ -27,6 +33,11 @@ soundworks.server.setClientConfigDefinition((clientType, config, httpRequest) =>
   };
 });
 
-const performance = new BeatsExperience('player');
+const sharedParams = server.require('shared-params');
+// sharedParams.addBoolean('start', 'Start', false);
+sharedParams.addNumber('gain', 'Gain', 0, 1, 0.01, 1);
 
-soundworks.server.start();
+const beatsExperience = new BeatsExperience('player');
+const controllerExperience = new ControllerExperience('controller');
+
+server.start();
