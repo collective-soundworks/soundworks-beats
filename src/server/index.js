@@ -25,8 +25,8 @@ server.setClientConfigDefinition((clientType, config, httpRequest) => {
   return {
     clientType: clientType,
     env: config.env,
-    socketIO: config.socketIO,
     appName: config.appName,
+    websockets: config.websockets,
     version: config.version,
     defaultType: config.defaultClient,
     assetsDomain: config.assetsDomain,

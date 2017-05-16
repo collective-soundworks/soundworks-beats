@@ -52,10 +52,10 @@ export default {
     capacity: Infinity,
   },
 
-  // socket.io configuration
-  socketIO: {
+  websockets: {
     url: '',
     transports: ['websocket'],
+    path: '',
     // @note: EngineIO defaults
     // pingTimeout: 3000,
     // pingInterval: 1000,
