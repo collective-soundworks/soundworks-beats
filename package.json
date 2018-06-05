@@ -2,10 +2,12 @@
   "name": "beats",
   "authors": [
     "Jean-Phillipe.Lambert",
-    "Sébastien Robaszkiewicz"
+    "Sébastien Robaszkiewicz",
+    "Benjamin Matuszewski"
   ],
-  "description": "Simple synchronisation test",
-  "version": "2.0.1",
+  "description": "Simple synchronisation application example.",
+  "license": "BSD-3-Clause",
+  "version": "2.1.0",
   "scripts": {
     "clear": "node ./bin/runner --clear",
     "minify": "node ./bin/runner --minify",
