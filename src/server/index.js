@@ -3,6 +3,12 @@ import path from 'path';
 import { server, ControllerExperience } from 'soundworks/server';
 import BeatsExperience from './BeatsExperience';
 
+import { log, Blocked } from '../shared/utils';
+
+const blocked = new Blocked(duration => {
+  log(`----------------------- Blocked for ${duration} ms`);
+}, 50);
+
 // init configuration
 const configName = process.env.ENV || 'default';
 const configPath = path.join(__dirname, 'config', configName);

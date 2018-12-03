@@ -1,8 +1,9 @@
+import { log } from '../../shared/utils';
+
 import { Experience, audioContext } from 'soundworks/client';
 // import Synth from './Synth';
 import BeatsView from './BeatsView';
 import MetroEngine from './MetroEngine';
-
 
 const model = {
   state: 'syncDetails',
@@ -26,7 +27,7 @@ const model = {
 
   delay: 0,
   gain: 0,
-}
+};
 
 class BeatsPerformance extends Experience {
   constructor() {
@@ -60,6 +61,8 @@ class BeatsPerformance extends Experience {
     this.metro = new MetroEngine(this.sync);
     this.metro.connect(audioContext.destination);
 
+    log('experience started');
+
     this.show().then(() => {
       // console.log('[test]')
       this.send('init-request');
@@ -74,13 +77,23 @@ class BeatsPerformance extends Experience {
           // this.update('delay', values.delay);
         // }
 
-        const nextTime = Math.ceil(this.sync.getSyncTime());
-        this.syncScheduler.add(this.metro, nextTime);
+        // const nextTime = Math.ceil(this.sync.getSyncTime());
+        // this.syncScheduler.add(this.metro, nextTime);
+        // log('scheduler added');
+
       });
+
+      const nextTime = Math.ceil(this.sync.getSyncTime());
+      this.syncScheduler.add(this.metro, nextTime);
+      log('scheduler added');
+
+
     });
   }
 
   update(target, value) {
+    log('update', target, value);
+
     switch (target) {
       case 'invertPhase':
         this.metro.invertPhase = value;

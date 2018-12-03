@@ -1,7 +1,6 @@
-import { audioContext, audio } from 'soundworks/client';
-import debug from 'debug';
+import { log } from '../../shared/utils';
 
-const log = debug('soundworks:beats');
+import { audioContext, audio } from 'soundworks/client';
 
 
 /**

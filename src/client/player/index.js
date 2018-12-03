@@ -3,8 +3,16 @@ import * as soundworks from 'soundworks/client';
 import BeatsExperience from './BeatsExperience';
 import serviceViews from '../shared/serviceViews';
 
+import { log, Blocked } from '../../shared/utils';
+
+const blocked = new Blocked(duration => {
+  log(`----------------------- Blocked for ${duration} ms`);
+}, 50);
+
 // launch application when document is fully loaded
 window.addEventListener('load', () => {
+  log('loaded');
+
   // initialize the client with configuration received
   // from the server through the `index.html`
   // @see {~/src/server/index.js}
