@@ -24,7 +24,38 @@
 }
 
 
-#beats, .tiny {
+#beats {
+  padding: 10px;
+  box-sizing: border-box;
+
+  .ua {
+    font-size: 0.8rem;
+  }
+
+  .controls {
+    margin: 10px 0;
+  }
+
+  .state {
+    margin: 10px 0;
+  }
+
+  .menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+
+    .btn {
+      width: 100%;
+      margin-bottom: 4px;
+    }
+  }
+}
+
+.tiny {
   font-size: 0.9rem;
 }
 
@@ -38,3 +69,15 @@
   }
 }
 
+.green {
+  color: green;
+}
+
+.red {
+  color: red;
+}
+
+ul {
+  padding: 0;
+  margin: 0;
+}
