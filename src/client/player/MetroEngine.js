@@ -1,4 +1,4 @@
-import { audioContext } from 'soundworks/client';
+import { audioContext, audio } from 'soundworks/client';
 import debug from 'debug';
 
 const log = debug('soundworks:beats');
@@ -40,8 +40,9 @@ function generateClackBuffer() {
   const data = buffer.getChannelData(0);
   const amplitude = dBToLin(gain);
 
-  for (let i = 0; i < length; ++i)
+  for (let i = 0; i < length; i += 1) {
     data[i] = amplitude; // sic
+  }
 
   return buffer;
 }
@@ -56,23 +57,25 @@ function generateNoiseBuffer() {
   const channelCount = audioContext.destination.channelCount;
   const buffer = audioContext.createBuffer(channelCount, length, sampleRate);
 
-  for (let c = 0; c < channelCount; ++c) {
+  for (let c = 0; c < channelCount; c += 1) {
     const data = buffer.getChannelData(c);
 
-    for (let i = 0; i < length; ++i)
+    for (let i = 0; i < length; i += 1) {
       data[i] = amplitude * (Math.random() * 2 + 1);
+    }
   }
 
   return buffer;
 }
 
-class Synth {
+class MetroEngine extends audio.TimeEngine {
   constructor(sync) {
-    this.sync = sync;
+    super();
 
-    this.scheduleID = 0; // to cancel setTimeout
-    this.schedulePeriod = 0.05;
-    this.scheduleLookahead = 0.5;
+    this.sync = sync;
+    this.period = 1;
+    this.phase = 0;
+    this._delay = 0; // compensation
 
     this.clickBuffer = generateClickBuffer();
     this.clackBuffer = generateClackBuffer();
@@ -81,68 +84,50 @@ class Synth {
     this.output = audioContext.createGain();
   }
 
+  set invertPhase(flag) {
+    if (flag) {
+      this.phase = this.period / 2;
+    } else {
+      this.phase = 0;
+    }
+
+    console.log(this.phase);
+  }
+
   set gain(value) {
-    this.output.gain.value = value;
+    this.output.gain.value = dBToLin(value);
+  }
+
+  set delay(value) {
+    this._delay = value;
   }
 
   connect(destination) {
     this.output.connect(destination);
   }
 
-  /**
-   * Initiate a running process, starting at nextTime, or now if
-   * nextTime is in past.
-   *
-   * @param {Number} nextTime - in sync time
-   * @param {Number} period - in seconds
-   */
-  play(nextTime, period) {
-    clearTimeout(this.scheduleID);
-
+  advanceTime(syncTime) {
     const now = this.sync.getSyncTime();
+    const audioTime = this.master.audioTime;
+    log(syncTime, now);
 
-    if (nextTime < now + this.scheduleLookahead) {
-      // too late
-      if (nextTime < now) {
-        log('too late by', nextTime - now);
-        this.triggerSound(nextTime, this.noiseBuffer);
+    if (syncTime < now) {
+      this.triggerSound(audioTime, this.noiseBuffer);
+    } else {
+      this.triggerSound(audioTime, this.clickBuffer);
+    }
 
-        // good restart from now
-        nextTime += Math.ceil((now - nextTime) / period) * period;
-
-        // next it might be soon: fast forward
-        if (nextTime < now + this.scheduleLookahead) {
-          log('soon', nextTime - now);
-          this.triggerSound(nextTime, this.clackBuffer);
-          nextTime += period;
-        }
-      } else {
-        log('triggered', nextTime - now);
-        this.triggerSound(nextTime, this.clickBuffer);
-        nextTime += period;
-      }
-
-    } // within look-ahead
-
-    this.scheduleID = setTimeout(() => {
-      this.play(nextTime, period);
-    }, 1000 * this.schedulePeriod);
+    return syncTime + this.period;
   }
 
-  /**
-   * Actually output the sound.
-   *
-   * @param {Number} startTime - in sync time
-   */
-  triggerSound(startTime, buffer) {
+  triggerSound(audioTime, buffer) {
+    const startTime = Math.max(0, audioTime + this.phase + this._delay);
+
     const bufferSource = audioContext.createBufferSource();
     bufferSource.buffer = buffer;
     bufferSource.connect(this.output);
-
-    // compensate client delay
-    const localTime = Math.max(0, this.sync.getAudioTime(startTime));
-    bufferSource.start(localTime);
+    bufferSource.start(startTime);
   }
 }
 
-export default Synth;
+export default MetroEngine;

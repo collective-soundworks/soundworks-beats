@@ -1,4 +1,4 @@
-Simplistic way to test the synchronisation process.
+# Simplistic way to test the synchronisation process.
 
 ```
 npm install

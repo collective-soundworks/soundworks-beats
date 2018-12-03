@@ -7,6 +7,7 @@ class BeatsExperience extends Experience {
 
     this.sync = this.require('sync');
     this.sharedParams = this.require('shared-params');
+    this.syncScheduler = this.require('sync-scheduler');
   }
 
   start() {

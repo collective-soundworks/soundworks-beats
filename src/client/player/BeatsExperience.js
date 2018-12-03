@@ -1,67 +1,97 @@
-import { Experience, View, audioContext } from 'soundworks/client';
-import Synth from './Synth';
+import { Experience, audioContext } from 'soundworks/client';
+// import Synth from './Synth';
+import BeatsView from './BeatsView';
+import MetroEngine from './MetroEngine';
 
-const template = `
-  <ul class="small">
-    <li><span>status: </span><%= status %></li>
-    <li><span>status for: </span><%= statusDuration.toFixed(0) %></li>
-    <li><span>time offset: </span><%= timeOffset.toString().replace('.', '"') %></li>
-    <li><span>frequency ratio: </span><%= frequencyRatio %></li>
-    <li><span>connection: </span><%= connection %></li>
-    <li><span>connection for: </span><%= connectionDuration.toFixed(0) %></li>
-    <li><span>connection time out: </span><%= connectionTimeOut.toFixed(1).replace('.', '"') %></li>
-    <li><span>travel duration: </span><%= travelDuration.toFixed(3).replace('.', '"') %></li>
-    <li><span>travel duration min: </span><%= travelDurationMin.toFixed(3).replace('.', '"') %></li>
-    <li><span>travel duration max: </span><%= travelDurationMax.toFixed(3).replace('.', '"') %></li>
-  </ul>
-`;
+
+const model = {
+  state: 'syncDetails',
+
+  mute: false,
+  invertPhase: false,
+  userAgent: navigator.userAgent,
+
+  syncDetails: {
+    status: '',
+    statusDuration: 0,
+    timeOffset: 0,
+    frequencyRatio: 0,
+    connection: '',
+    connectionDuration: 0,
+    connectionTimeOut: 0,
+    travelDuration: 0,
+    travelDurationMin: 0,
+    travelDurationMax: 0,
+  },
+
+  delay: 0,
+  gain: 0,
+}
 
 class BeatsPerformance extends Experience {
   constructor() {
     super();
 
-    this.sync = this.require('sync');
+    this.model = model;
+
     this.platform = this.require('platform', { features: 'web-audio' });
+
+    this.sync = this.require('sync');
+    this.syncScheduler = this.require('sync-scheduler');
+
     this.sharedParams = this.require('shared-params');
 
-    // we hope that some report will be done before experience starts
-    this.model = {
-      status: '',
-      statusDuration: 0,
-      timeOffset: 0,
-      frequencyRatio: 0,
-      connection: '',
-      connectionDuration: 0,
-      connectionTimeOut: 0,
-      travelDuration: 0,
-      travelDurationMin: 0,
-      travelDurationMax: 0,
-    }
+    this.sync.addListener(report => {
+      Object.assign(this.model.syncDetails, report);
 
-    this.sync.addListener((report) => {
-      Object.assign(this.model, report);
-
-      if (this.view)
+      if (this.view && this.model.state === 'syncDetails') {
         this.view.render();
+      }
     });
   }
 
   start() {
     super.start();
 
-    this.synth = new Synth(this.sync); // a Web Audio synth that makes sound
-    this.synth.connect(audioContext.destination);
+    this.syncScheduler.lookahead = 1;
 
-    this.view = new View(template, this.model, {}, { id: this.id });
-    this.show();
-    // when the server sends the beat loop start time
-    this.receive('start:beat', (startTime, beatPeriod) => {
-      this.synth.play(startTime, beatPeriod);
-    });
+    this.view = new BeatsView(this.model, this);
 
-    this.sharedParams.addParamListener('gain', (gain) => {
-      this.synth.gain = gain;
+    this.metro = new MetroEngine(this.sync);
+    this.metro.connect(audioContext.destination);
+
+    this.show().then(() => {
+      // console.log('[test]')
+      this.send('init-request');
+
+      this.receive('init', values => {
+        // if (values !== null) {
+          // this.model.gain = values.gain;
+          // this.model.delay = values.delay;
+          // this.view.render();
+
+          // this.update('gain', values.gain);
+          // this.update('delay', values.delay);
+        // }
+
+        const nextTime = Math.ceil(this.sync.getSyncTime());
+        this.syncScheduler.add(this.metro, nextTime);
+      });
     });
+  }
+
+  update(target, value) {
+    switch (target) {
+      case 'invertPhase':
+        this.metro.invertPhase = value;
+        break;
+      case 'delay':
+        this.metro.delay = value * 0.001;
+        break;
+      case 'gain':
+        this.metro.gain = value;
+        break;
+    }
   }
 }
 
