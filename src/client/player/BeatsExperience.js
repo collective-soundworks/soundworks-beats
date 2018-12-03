@@ -73,10 +73,10 @@ class BeatsPerformance extends Experience {
           // this.update('gain', values.gain);
           // this.update('delay', values.delay);
         // }
-
-        const nextTime = Math.ceil(this.sync.getSyncTime());
-        this.syncScheduler.add(this.metro, nextTime);
       });
+
+      const nextTime = Math.ceil(this.sync.getSyncTime());
+      this.syncScheduler.add(this.metro, nextTime);
     });
   }
 

@@ -1,9 +1,6 @@
 import { audioContext, audio } from 'soundworks/client';
 import debug from 'debug';
 
-const log = debug('soundworks:beats');
-
-
 /**
  * Convert dB to linear gain value (1e-3 for -60dB)
  *
@@ -69,9 +66,10 @@ function generateNoiseBuffer() {
 }
 
 class MetroEngine extends audio.TimeEngine {
-  constructor(sync) {
+  constructor(model, sync) {
     super();
 
+    this.model = model;
     this.sync = sync;
     this.period = 1;
     this.phase = 0;
@@ -109,7 +107,6 @@ class MetroEngine extends audio.TimeEngine {
   advanceTime(syncTime) {
     const now = this.sync.getSyncTime();
     const audioTime = this.master.audioTime;
-    log(syncTime, now);
 
     if (syncTime < now) {
       this.triggerSound(audioTime, this.noiseBuffer);

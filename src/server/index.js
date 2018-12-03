@@ -1,7 +1,8 @@
 import 'source-map-support/register'; // enable sourcemaps in node
 import path from 'path';
-import { server, ControllerExperience } from 'soundworks/server';
+import { server } from 'soundworks/server';
 import BeatsExperience from './BeatsExperience';
+import ControllerExperience from './ControllerExperience';
 
 // init configuration
 const configName = process.env.ENV || 'default';
@@ -35,7 +36,7 @@ server.setClientConfigDefinition((clientType, config, httpRequest) => {
 
 const sharedParams = server.require('shared-params');
 // sharedParams.addBoolean('start', 'Start', false);
-sharedParams.addNumber('gain', 'Gain', 0, 1, 0.01, 1);
+// sharedParams.addNumber('gain', 'Gain', 0, 1, 0.01, 1);
 
 const beatsExperience = new BeatsExperience('player');
 const controllerExperience = new ControllerExperience('controller');
