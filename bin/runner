@@ -61,8 +61,13 @@ const clientsSearch = new RegExp(escapedClientsSearchStr);
 const clientPublicDirectory = path.join(cwd, 'public', 'js');
 const serverIndex = path.join(distDirectory, 'server', 'index.js');
 
-const soundworksClientDirectory = path.join(cwd, 'node_modules', 'soundworks', 'client');
-const soundworksServerDirectory = path.join(cwd, 'node_modules', 'soundworks', 'server');
+const additionnalClientDirectories = [
+  path.join(cwd, 'node_modules', 'soundworks', 'client'),
+];
+
+const additionnalServerDirectories = [
+  path.join(cwd, 'node_modules', 'soundworks', 'server'),
+];
 
 // CSS Stuff
 const sassSrcDirectory = path.join(cwd, 'sass');
@@ -103,8 +108,7 @@ const transpileFile = file => {
           })
           .catch(err => log.transpileError(file, err));
       }
-    })
-    .catch(err => console.error(err.stack))
+    });
 };
 
 /**
@@ -125,8 +129,7 @@ const bundleClient = file => {
           return log.bundleSuccess(file, dist, dt);
         })
         .catch(err => log.bundleError(file, err));
-    })
-    .catch(err => console.error(err.stack));
+    });
 };
 
 const bundleClients = () => {
@@ -151,13 +154,11 @@ const minifyClient = file => {
           return log.minifySuccess(file, dist, dt);
         })
         .catch(err => log.minifyError(file, err));
-    })
-    .catch(err => console.error(err.stack));
+    });
 };
 
 /**
- * Process all sass files
- * @param File file - client entry point in the `dist` filter (transpiled version)
+ * process all sass files
  */
 const processSass = () => {
   return fileStore.getAll(sassSrcDirectory)
@@ -167,6 +168,7 @@ const processSass = () => {
         .map(src => {
           const basename = path.basename(src.abs, '.scss');
           const cssFilename = path.join(cssPublicDirectory, basename + '.css');
+
           return Promise.all([src, fileStore.get(cssFilename)])
         });
 
@@ -175,7 +177,7 @@ const processSass = () => {
           const promises = pairs.map(([src, dist]) => {
             const startTime = new Date().getTime();
 
-            styles.process(src, dist, sassOptions)
+            return styles.process(src, dist, sassOptions)
               .then(([src, dist]) => {
                 const dt = new Date().getTime() - startTime;
                 return log.sassSuccess(src, dist, dt);
@@ -184,9 +186,9 @@ const processSass = () => {
           });
 
           return Promise.all(promises);
-        });
-    })
-    .catch(err => console.error(err.stack));;
+        })
+        .catch(err => {});
+    });
 };
 
 const restartServer = () => {
@@ -250,7 +252,7 @@ function watchJsSources() {
           return restartServer();
         }
       })
-      .catch(err => console.error(err.stack));
+      .catch(err => {});
   }
 
   // watch file system
@@ -261,17 +263,21 @@ function watchJsSources() {
   });
 }
 
-function watchSoundworksSources() {
-  watch.createMonitor(soundworksClientDirectory, Object.assign({}, watchOptions), monitor => {
-    monitor.on('created', bundleClients);
-    monitor.on('changed', bundleClients);
-    monitor.on('removed', bundleClients);
+function watchAdditionnalSources() {
+  additionnalClientDirectories.forEach(dir => {
+    watch.createMonitor(dir, Object.assign({}, watchOptions), monitor => {
+      monitor.on('created', bundleClients);
+      monitor.on('changed', bundleClients);
+      monitor.on('removed', bundleClients);
+    });
   });
 
-  watch.createMonitor(soundworksServerDirectory, Object.assign({}, watchOptions), monitor => {
-    monitor.on('created', restartServer);
-    monitor.on('changed', restartServer);
-    monitor.on('removed', restartServer);
+  additionnalServerDirectories.forEach(dir => {
+    watch.createMonitor(dir, Object.assign({}, watchOptions), monitor => {
+      monitor.on('created', restartServer);
+      monitor.on('changed', restartServer);
+      monitor.on('removed', restartServer);
+    });
   });
 }
 
@@ -299,7 +305,7 @@ function __watch() {
   watchHtmlSources();
   watchCssSources();
   watchJsSources();
-  watchSoundworksSources();
+  watchAdditionnalSources();
 
   return fileStore.get(serverIndex).then(server.start);
 }
@@ -309,24 +315,31 @@ function __transpile() {
 
   const transpileJS = fileStore.getAll(srcDirectory)
     .then(sources => { // 1. transpile all js files (if json, just copy)
-      return Promise.all(sources.map(src => transpileFile(src)));
+      return sources.reduce((promise, src) => {
+        return promise.then(all => {
+          return transpileFile(src).then(pair => {
+            all.push(pair);
+            return all;
+          });
+        }).catch(err => {});
+      }, Promise.resolve([]));
     })
     .then(pairs => { // 2. bundle clients
       const clients = pairs.filter(([src, dist]) => dist.abs.match(clientsMatch));
       return Promise.all(clients.map(([src, dist]) => bundleClient(dist)));
     })
-    .catch(err => console.error(err.stack));
+    .catch(err => {});
 
   return Promise
     .all([transpileSass, transpileJS])
-    .catch(err => console.error(err.stack));
+    .catch(err => {});
 }
 
 function __start() {
   return fileStore
     .get(serverIndex)
     .then(server.start)
-    .catch(err => console.error(err.stack));
+    .catch(err => {});
 }
 
 function __minify() {
@@ -339,7 +352,7 @@ function __minify() {
         .all(deletePromises)
         .then(() => fileStore.getAll(clientPublicDirectory))
         .then(files => Promise.all(files.map(minifyClient)))
-        .catch(err => console.error(err.stack));
+        .catch(err => {});
     });
 }
 
@@ -353,7 +366,7 @@ function __clear() {
   return Promise
     .all(directories)
     .then(handles => Promise.all(handles.map(deleteEntry)))
-    .catch(err => console.error(err.stack));
+    .catch(err => {});
 }
 
 /* --------------------------------------------------------------------------
@@ -364,20 +377,23 @@ const cmd = process.argv[2];
 
 switch (cmd) {
   case '--watch':
-    __transpile().then(__watch);
+    __transpile().then(__watch).catch(err => console.error('Unhandled Error', err));
     break;
   case '--transpile':
-    __transpile();
+    __transpile().catch(err => console.error('Unhandled Error', err));
     break;
   case '--start':
-    __start();
+    __start().catch(err => console.error('Unhandled Error', err));
+    break;
   case '--minify':
-    __minify();
+    __minify().catch(err => console.error('Unhandled Error', err));;
     break;
   case '--clear':
-    __clear();
+    __clear().catch(err => console.error('Unhandled Error', err));;
     break;
 }
+
+process.on('SIGINT', () => process.exit());
 
 /* -------------------------------------------------------------------------- */
 

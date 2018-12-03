@@ -1,18 +1,21 @@
 import { View } from 'soundworks/client';
 
 const template = `
-<p class="tiny"><span>userAgent: </span><%= userAgent %></p>
+<p class="tiny ua"><span>userAgent: </span><%= userAgent %></p>
 
-<button class="btn<%= mute ? ' active' : '' %>" data-type="bool" data-target="mute">Mute</button>
-<button class="btn<%= invertPhase ? ' active' : '' %>" data-type="bool" data-target="invertPhase">Ø</button>
+<div class="controls">
+  <button class="btn<%= mute ? ' active' : '' %>" data-type="bool" data-target="mute">Mute</button>
+  <button class="btn<%= invertPhase ? ' active' : '' %>" data-type="bool" data-target="invertPhase">Ø</button>
+</div>
 
 <p class="small">
   <span>Sync:</span>
   <% var className = syncDetails.connection === 'offline' ? 'red' : 'green' %>
-  <span class="<%= className %>"><%= syncDetails.connection %></span>
+  <span class="<%= className %>"><%= syncDetails.connection.toUpperCase() %></span>
 </p>
 
 <% if (state === 'syncDetails') { %>
+<div class="state">
   <ul class="small">
     <li><span>status: </span><%= syncDetails.status %></li>
     <li><span>status for: </span><%= syncDetails.statusDuration.toFixed(0) %></li>
@@ -25,6 +28,7 @@ const template = `
     <li><span>travel duration min: </span><%= syncDetails.travelDurationMin.toFixed(3).replace('.', '"') %></li>
     <li><span>travel duration max: </span><%= syncDetails.travelDurationMax.toFixed(3).replace('.', '"') %></li>
   </ul>
+</div>
 <% } %>
 
 <% if (state === 'calibrateDelay') { %>
@@ -51,15 +55,17 @@ const template = `
 
 
 <!-- menu -->
-<button class="btn<%= state === 'syncDetails' ? ' active' : '' %>" data-type="set-state" data-target="syncDetails">
-  Sync Details
-</button>
-<button class="btn<%= state === 'calibrateDelay' ? ' active' : '' %>" data-type="set-state" data-target="calibrateDelay">
-  Calibrate Delay
-</button>
-<button class="btn<%= state === 'calibrateGain' ? ' active' : '' %>" data-type="set-state" data-target="calibrateGain">
-  Calibrate Gain
-</button>
+<div class="menu">
+  <button class="btn<%= state === 'syncDetails' ? ' active' : '' %>" data-type="set-state" data-target="syncDetails">
+    Sync Details
+  </button>
+  <button class="btn<%= state === 'calibrateDelay' ? ' active' : '' %>" data-type="set-state" data-target="calibrateDelay">
+    Calibrate Delay
+  </button>
+  <button class="btn<%= state === 'calibrateGain' ? ' active' : '' %>" data-type="set-state" data-target="calibrateGain">
+    Calibrate Gain
+  </button>
+</div>
 `;
 
 class BeatsView extends View {
