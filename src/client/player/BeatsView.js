@@ -56,6 +56,10 @@ const template = `
 
 <!-- menu -->
 <div class="menu">
+  <button class="btn db" value="store">Store</button>
+  <button class="btn db" value="retrieve">Retrieve</button>
+
+
   <button class="btn<%= state === 'syncDetails' ? ' active' : '' %>" data-type="set-state" data-target="syncDetails">
     Sync Details
   </button>
@@ -109,6 +113,11 @@ class BeatsView extends View {
         this.experience.update(target, this.model[target]);
         this.render();
       },
+
+      'click .btn.db': e => {
+        const value = e.target.value;
+        this.experience.triggerDb(value)
+      }
     });
 
   }

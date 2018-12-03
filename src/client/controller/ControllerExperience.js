@@ -15,7 +15,8 @@ class ControllerExperience extends Experience {
     this.sharedParamsComponent = new SharedParamsComponent(this, this.sharedParams);
     this.logComponent = new LogComponent(this);
 
-    this.setGuiOptions('numPlayers', { readonly: true });
+    // this.setGuiOptions('numPlayers', { readonly: true });
+    this.setGuiOptions('forceBuffer', { type: 'buttons' });
 
     if (options.auth)
       this.auth = this.require('auth');

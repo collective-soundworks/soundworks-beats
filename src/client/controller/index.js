@@ -17,7 +17,7 @@ window.addEventListener('load', () => {
       instance.view = serviceViews.get(id, config);
   });
 
-  const experience = new soundworks.ControllerExperience();
+  const experience = new ControllerExperience();
 
   soundworks.client.start();
 });

@@ -37,6 +37,7 @@ class _EnumGui {
   constructor($container, param, guiOptions) {
     const { label, options, value } = param;
 
+    console.log(guiOptions);
     const ctor = guiOptions.type === 'buttons' ?
       controllers.SelectButtons : controllers.SelectList
 

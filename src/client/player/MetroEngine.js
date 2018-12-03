@@ -1,5 +1,4 @@
 import { audioContext, audio } from 'soundworks/client';
-import debug from 'debug';
 
 /**
  * Convert dB to linear gain value (1e-3 for -60dB)
@@ -66,14 +65,12 @@ function generateNoiseBuffer() {
 }
 
 class MetroEngine extends audio.TimeEngine {
-  constructor(model, sync) {
+  constructor(sync, model) {
     super();
 
     this.model = model;
     this.sync = sync;
     this.period = 1;
-    this.phase = 0;
-    this._delay = 0; // compensation
 
     this.clickBuffer = generateClickBuffer();
     this.clackBuffer = generateClackBuffer();
@@ -82,22 +79,8 @@ class MetroEngine extends audio.TimeEngine {
     this.output = audioContext.createGain();
   }
 
-  set invertPhase(flag) {
-    if (flag) {
-      this.phase = this.period / 2;
-    } else {
-      this.phase = 0;
-    }
-
-    console.log(this.phase);
-  }
-
   set gain(value) {
     this.output.gain.value = dBToLin(value);
-  }
-
-  set delay(value) {
-    this._delay = value;
   }
 
   connect(destination) {
@@ -107,18 +90,42 @@ class MetroEngine extends audio.TimeEngine {
   advanceTime(syncTime) {
     const now = this.sync.getSyncTime();
     const audioTime = this.master.audioTime;
+    let normalBuffer;
+    let lateBuffer;
+
+    if (this.model.forceBuffer === 'auto') {
+      switch (this.model.state) {
+        case 'syncDetails':
+          normalBuffer = this.clackBuffer;
+          lateBuffer = this.noiseBuffer;
+          break
+        case 'calibrateDelay':
+          normalBuffer = this.clickBuffer;
+          lateBuffer = this.noiseBuffer;
+          break
+        case 'calibrateGain':
+          normalBuffer = this.noiseBuffer;
+          lateBuffer = this.noiseBuffer;
+          break
+      }
+    } else {
+      normalBuffer = this[`${this.model.forceBuffer}Buffer`];
+      lateBuffer = this[`${this.model.forceBuffer}Buffer`];
+    }
 
     if (syncTime < now) {
-      this.triggerSound(audioTime, this.noiseBuffer);
+      this.triggerSound(audioTime, lateBuffer);
     } else {
-      this.triggerSound(audioTime, this.clickBuffer);
+      this.triggerSound(audioTime, normalBuffer);
     }
 
     return syncTime + this.period;
   }
 
   triggerSound(audioTime, buffer) {
-    const startTime = Math.max(0, audioTime + this.phase + this._delay);
+    const phase = this.model.invertPhase ? this.period / 2 : 0;
+    const delay = this.model.delay * 0.001;
+    const startTime = Math.max(0, audioTime + phase + delay);
 
     const bufferSource = audioContext.createBufferSource();
     bufferSource.buffer = buffer;

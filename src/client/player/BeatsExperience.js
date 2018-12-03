@@ -1,11 +1,11 @@
 import { Experience, audioContext } from 'soundworks/client';
-// import Synth from './Synth';
+import { debug } from '../../shared/utils';
 import BeatsView from './BeatsView';
 import MetroEngine from './MetroEngine';
 
-
 const model = {
   state: 'syncDetails',
+  forceBuffer: 'auto',
 
   mute: false,
   invertPhase: false,
@@ -26,7 +26,7 @@ const model = {
 
   delay: 0,
   gain: 0,
-}
+};
 
 class BeatsPerformance extends Experience {
   constructor() {
@@ -57,40 +57,61 @@ class BeatsPerformance extends Experience {
 
     this.view = new BeatsView(this.model, this);
 
-    this.metro = new MetroEngine(this.sync);
-    this.metro.connect(audioContext.destination);
+    this.master = audioContext.createGain();
+    this.master.connect(audioContext.destination);
+
+    this.metro = new MetroEngine(this.sync, this.model);
+    this.metro.connect(this.master);
+
+    this.sharedParams.addParamListener('forceBuffer', value => {
+      this.model.forceBuffer = value;
+    });
+
+    this.sharedParams.addParamListener('mute', value => {
+      this.model.mute = value;
+      this.update('mute', value);
+      this.view.render();
+    });
 
     this.show().then(() => {
-      // console.log('[test]')
-      this.send('init-request');
-
-      this.receive('init', values => {
-        // if (values !== null) {
-          // this.model.gain = values.gain;
-          // this.model.delay = values.delay;
-          // this.view.render();
-
-          // this.update('gain', values.gain);
-          // this.update('delay', values.delay);
-        // }
+      this.receive('set-calibration', values => {
+        console.log(values);
+        this.model.gain = values.gain;
+        this.model.delay = values.delay;
+        this.view.render();
       });
 
-      const nextTime = Math.ceil(this.sync.getSyncTime());
-      this.syncScheduler.add(this.metro, nextTime);
+      this.receive('init', values => {
+        const nextTime = Math.ceil(this.sync.getSyncTime());
+        this.syncScheduler.add(this.metro, nextTime);
+      });
+
+      this.send('init-request', this.model.userAgent);
     });
   }
 
   update(target, value) {
     switch (target) {
-      case 'invertPhase':
-        this.metro.invertPhase = value;
-        break;
-      case 'delay':
-        this.metro.delay = value * 0.001;
-        break;
       case 'gain':
         this.metro.gain = value;
         break;
+      case 'mute':
+        const gain = value ? 0 : 1;
+        this.master.gain.value = gain;
+        break;
+    }
+  }
+
+  triggerDb(type) {
+    if (type === 'store') {
+      const values = {
+        delay: this.model.delay,
+        gain: this.model.gain,
+      }
+
+      this.send('store', this.model.userAgent, values);
+    } else if (type === 'retrieve') {
+      this.send('retrieve', this.model.userAgent);
     }
   }
 }

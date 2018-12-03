@@ -2,8 +2,12 @@
 import * as soundworks from 'soundworks/client';
 import BeatsExperience from './BeatsExperience';
 import serviceViews from '../shared/serviceViews';
+import { debug, Blocked } from '../../shared/utils';
 
-// launch application when document is fully loaded
+const blocked = new Blocked(duration => {
+  debug(`----------------------- Blocked for ${duration} ms`);
+}, 50);
+
 window.addEventListener('load', () => {
   // initialize the client with configuration received
   // from the server through the `index.html`

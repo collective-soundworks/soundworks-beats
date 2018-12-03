@@ -3,6 +3,11 @@ import path from 'path';
 import { server } from 'soundworks/server';
 import BeatsExperience from './BeatsExperience';
 import ControllerExperience from './ControllerExperience';
+import { debug, Blocked } from '../shared/utils';
+
+const blocked = new Blocked(duration => {
+  debug(`----------------------- Blocked for ${duration} ms`);
+}, 50);
 
 // init configuration
 const configName = process.env.ENV || 'default';
@@ -35,8 +40,8 @@ server.setClientConfigDefinition((clientType, config, httpRequest) => {
 });
 
 const sharedParams = server.require('shared-params');
-// sharedParams.addBoolean('start', 'Start', false);
-// sharedParams.addNumber('gain', 'Gain', 0, 1, 0.01, 1);
+sharedParams.addBoolean('mute', 'mute', false);
+sharedParams.addEnum('forceBuffer', 'forceBuffer', ['auto', 'click', 'clack', 'noise'], 'auto');
 
 const beatsExperience = new BeatsExperience('player');
 const controllerExperience = new ControllerExperience('controller');
